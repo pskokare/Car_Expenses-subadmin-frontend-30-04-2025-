@@ -88,9 +88,6 @@
 
 // export default InvoicePDFDownloader
 
-
-
-
 "use client";
 
 import { useState } from "react";
@@ -136,22 +133,26 @@ const InvoicePDFDownloader = ({
         body: JSON.stringify(payload),
       });
 
-      console.log("Fetching from:", `${baseURL}api/assigncab`);
+      console.log("Request sent to:", `${baseURL}api/assigncab`);
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Backend error:", errorText);
         throw new Error("Failed to generate PDF");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
+
+      const cabNumber = trip?.cab?.cabNumber || "cab";
       link.href = url;
-      link.download = `Invoice-${trip?.cab?.cabNumber || "cab"}.pdf`;
+      link.download = `Invoice-${cabNumber}.pdf`;
 
       document.body.appendChild(link);
       link.click();
-      window.URL.revokeObjectURL(url);
       document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading PDF:", error);
       alert("Failed to generate PDF. Please try again.");
