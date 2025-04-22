@@ -1224,7 +1224,7 @@ const CabSearch = () => {
                           </div>
                         </td>
                         <td className="p-2">
-                          <PDFDownloadLink
+                          {/* <PDFDownloadLink
                             document={
                               <InvoicePDF
                               cabData={cabData}
@@ -1245,7 +1245,7 @@ const CabSearch = () => {
                                 {loading ? "Generating PDF..." : "Download Invoice"}
                               </button>
                             )}
-                          </PDFDownloadLink>
+                          </PDFDownloadLink> */}
                         </td>
                       </tr>
                     ))
@@ -1311,7 +1311,7 @@ const CabSearch = () => {
                         <MapPin size={16} />
                       </button>
                     </div>
-                    <PDFDownloadLink
+                    {/* <PDFDownloadLink
                       document={
                         <InvoicePDF
                           trip={item}
@@ -1331,7 +1331,7 @@ const CabSearch = () => {
                           {loading ? "Generating PDF..." : "Download Invoice"}
                         </button>
                       )}
-                    </PDFDownloadLink>
+                    </PDFDownloadLink> */}
                   </div>
                 ))
               ) : (
