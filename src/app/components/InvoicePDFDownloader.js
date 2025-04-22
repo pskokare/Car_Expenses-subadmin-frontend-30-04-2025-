@@ -1,88 +1,174 @@
-"use client"
+// "use client"
 
-import { useState } from "react"
+// import { useState } from "react"
+// import baseURL from "@/utils/api";
+
+// const InvoicePDFDownloader = ({
+//     trip,
+//     cabData,
+//     cabExpense,
+//     companyLogo,
+//     invoiceNumber,
+//     signature,
+//     companyInfo,
+//     companyPrefix,
+//     companyName,
+//     invoiceDate,
+// }) => {
+//     const [generating, setGenerating] = useState(false)
+
+//     const handleDownload = async () => {
+//         try {
+//             setGenerating(true)
+
+//             // Create a form data object to send to the server
+//             const payload = {
+//                 trip,
+//                 cabData,
+//                 cabExpense,
+//                 companyLogo,
+//                 invoiceNumber,
+//                 signature,
+//                 companyInfo,
+//                 companyPrefix,
+//                 companyName,
+//                 invoiceDate,
+//             }
+
+//             // Make a POST request to the API route
+//             const response = await fetch(`${baseURL}api/assigncab`, {
+//                 method: "POST",
+//                 headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+
+//             })
+
+
+//             if (!response.ok) {
+//                 throw new Error("Failed to generate PDF")
+//             }
+
+//             // Get the PDF as a blob
+//             const blob = await response.blob()
+
+//             // Create a URL for the blob
+//             const url = window.URL.createObjectURL(blob)
+
+//             // Create a temporary link element
+//             const link = document.createElement("a")
+//             link.href = url
+//             link.download = `Invoice-${trip?.cab?.cabNumber || "cab"}.pdf`
+
+//             // Append the link to the body
+//             document.body.appendChild(link)
+
+//             // Click the link to trigger the download
+//             link.click()
+
+//             // Clean up
+//             window.URL.revokeObjectURL(url)
+//             document.body.removeChild(link)
+//         } catch (error) {
+//             console.error("Error downloading PDF:", error)
+//             alert("Failed to generate PDF. Please try again.")
+//         } finally {
+//             setGenerating(false)
+//         }
+//     }
+
+//     return (
+//         <button
+//             onClick={handleDownload}
+//             disabled={generating}
+//             className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
+//         >
+//             {generating ? "Generating PDF..." : "Download Invoice"}
+//         </button>
+//     )
+// }
+
+// export default InvoicePDFDownloader
+
+
+
+
+"use client";
+
+import { useState } from "react";
 import baseURL from "@/utils/api";
 
 const InvoicePDFDownloader = ({
-    trip,
-    cabData,
-    cabExpense,
-    companyLogo,
-    invoiceNumber,
-    signature,
-    companyInfo,
-    companyPrefix,
-    companyName,
-    invoiceDate,
+  trip,
+  cabData,
+  cabExpense,
+  companyLogo,
+  invoiceNumber,
+  signature,
+  companyInfo,
+  companyPrefix,
+  companyName,
+  invoiceDate,
 }) => {
-    const [generating, setGenerating] = useState(false)
+  const [generating, setGenerating] = useState(false);
 
-    const handleDownload = async () => {
-        try {
-            setGenerating(true)
+  const handleDownload = async () => {
+    try {
+      setGenerating(true);
 
-            // Create a form data object to send to the server
-            const payload = {
-                trip,
-                cabData,
-                cabExpense,
-                companyLogo,
-                invoiceNumber,
-                signature,
-                companyInfo,
-                companyPrefix,
-                companyName,
-                invoiceDate,
-            }
+      const payload = {
+        trip,
+        cabData,
+        cabExpense,
+        companyLogo,
+        invoiceNumber,
+        signature,
+        companyInfo,
+        companyPrefix,
+        companyName,
+        invoiceDate,
+      };
 
-            // Make a POST request to the API route
-            const response = await fetch(`${baseURL}api/assigncab`, {
-                method: "POST",
-                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+      const response = await fetch(`${baseURL}api/assigncab`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-            })
+      console.log("Fetching from:", `${baseURL}api/assigncab`);
 
-            if (!response.ok) {
-                throw new Error("Failed to generate PDF")
-            }
+      if (!response.ok) {
+        throw new Error("Failed to generate PDF");
+      }
 
-            // Get the PDF as a blob
-            const blob = await response.blob()
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Invoice-${trip?.cab?.cabNumber || "cab"}.pdf`;
 
-            // Create a URL for the blob
-            const url = window.URL.createObjectURL(blob)
-
-            // Create a temporary link element
-            const link = document.createElement("a")
-            link.href = url
-            link.download = `Invoice-${trip?.cab?.cabNumber || "cab"}.pdf`
-
-            // Append the link to the body
-            document.body.appendChild(link)
-
-            // Click the link to trigger the download
-            link.click()
-
-            // Clean up
-            window.URL.revokeObjectURL(url)
-            document.body.removeChild(link)
-        } catch (error) {
-            console.error("Error downloading PDF:", error)
-            alert("Failed to generate PDF. Please try again.")
-        } finally {
-            setGenerating(false)
-        }
+      document.body.appendChild(link);
+      link.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Error downloading PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setGenerating(false);
     }
+  };
 
-    return (
-        <button
-            onClick={handleDownload}
-            disabled={generating}
-            className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
-        >
-            {generating ? "Generating PDF..." : "Download Invoice"}
-        </button>
-    )
-}
+  return (
+    <button
+      onClick={handleDownload}
+      disabled={generating}
+      className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition-colors"
+    >
+      {generating ? "Generating PDF..." : "Download Invoice"}
+    </button>
+  );
+};
 
-export default InvoicePDFDownloader
+export default InvoicePDFDownloader;
