@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "../slidebar/page";
 import axios from "axios";
 // import { PDFDownloadLink } from "@react-pdf/renderer";
-import InvoicePDF from "../components/InvoicePDF";
+// import InvoicePDF from "../components/InvoicePDF";
 import { MapPin, X } from 'lucide-react';
 import LeafletMap from "../components/LeafletMap";
 import baseURL from "@/utils/api";
@@ -1482,43 +1482,3 @@ const CabSearch = () => {
 }
 
 export default CabSearch
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
