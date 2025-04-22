@@ -112,6 +112,9 @@ const InvoicePDFDownloader = ({
       setGenerating(true);
 
       const payload = {
+        driverId: trip?.driverId,
+        cabNumber: trip?.cab?.cabNumber,
+        assignedBy: trip?.assignedBy,
         trip,
         cabData,
         cabExpense,
@@ -123,6 +126,7 @@ const InvoicePDFDownloader = ({
         companyName,
         invoiceDate,
       };
+      
 
       const response = await fetch(`${baseURL}api/assigncab`, {
         method: "POST",
