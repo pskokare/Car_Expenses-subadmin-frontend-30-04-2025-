@@ -344,7 +344,7 @@ const InvoicePDF = ({
           }
           return sum + (Number(amt) || 0)
         }, 0)
-      } else if (typeof value === 'string') {z
+      } else if (typeof value === 'string') {
         tyreAmount = Number(value.replace(/[^\d.-]/g, '')) || 0
       } else {
         tyreAmount = Number(value) || 0
