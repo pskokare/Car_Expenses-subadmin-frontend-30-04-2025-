@@ -2,8 +2,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import Sidebar from "../slidebar/page";
 import axios from "axios";
-// import { PDFDownloadLink } from "@react-pdf/renderer";
-// import InvoicePDF from "../components/InvoicePDF";
+import { PDFDownloadLink } from "@react-pdf/renderer";
+import InvoicePDF from "../components/InvoicePDF";
 import { MapPin, X } from 'lucide-react';
 import LeafletMap from "../components/LeafletMap";
 import baseURL from "@/utils/api";
@@ -41,7 +41,7 @@ const CabSearch = () => {
   const [currentDistance, setCurrentDistance] = useState(0)
   const [remainingDistance, setRemainingDistance] = useState(0)
   const [clickedCoordinates, setClickedCoordinates] = useState(null)
-  const[cabData,setCabData]=useState(null)
+  const [cabData, setCabData] = useState(null)
   // Add state for image modal
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState("")
@@ -85,43 +85,43 @@ const CabSearch = () => {
       console.log("Leaflet not loaded yet");
       return;
     }
-  
+
     const L = window.L;
     const mapContainer = document.getElementById("map-container");
-  
+
     if (!mapContainer) {
       return;
     }
-  
+
     // Set explicit height to ensure the container is visible
     mapContainer.style.height = "100%";
     mapContainer.style.width = "100%";
-  
+
     // Clean up any existing map
     cleanupMap();
-  
+
     try {
       // Get the current driver's location
       const driverLocation = selectedDriver?.driver?.location;
-  
+
       // Check if driver's location is available
       if (!driverLocation) {
         console.error("Driver location is not available.");
         return; // Exit if no location is available
       }
-  
+
       // Create the map using Leaflet and zoom directly to the driver's location
       const map = L.map("map-container").setView(
         [driverLocation.latitude, driverLocation.longitude],
         15 // Zoom level to directly focus on the driver's location
       );
-  
+
       // Add OpenStreetMap tiles
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(map);
-  
+
       // Create custom marker icon for driver
       const driverIcon = L.icon({
         iconUrl: "https://maps.google.com/mapfiles/ms/micons/cabs.png",
@@ -129,12 +129,12 @@ const CabSearch = () => {
         iconAnchor: [16, 32],
         popupAnchor: [0, -32],
       });
-  
+
       // Create marker for the driver's current position
       const marker = L.marker([driverLocation.latitude, driverLocation.longitude], {
         icon: driverIcon,
       }).addTo(map);
-  
+
       // Add popup with driver and route information
       marker
         .bindPopup(
@@ -149,18 +149,18 @@ const CabSearch = () => {
         `
         )
         .openPopup();
-  
+
       // Save references for future use
       mapRef.current = map;
       markerRef.current = marker;
-  
+
       // Force a resize to ensure the map renders correctly
       setTimeout(() => {
         if (mapRef.current) {
           mapRef.current.invalidateSize();
         }
       }, 100);
-  
+
     } catch (error) {
       console.error("Error initializing map:", error);
       showNotification("Error initializing map");
@@ -335,7 +335,7 @@ const CabSearch = () => {
 
   // Calculate distance between two points in kilometers
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; 
+    const R = 6371;
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
     const a =
@@ -440,17 +440,17 @@ const CabSearch = () => {
   // }, []);
 
   // Initialize map when showing it and Leaflet is loaded
-  
+
   useEffect(() => {
     if (typeof window === 'undefined') return; // Skip on server-side
-  
+
     const connectWebSocket = () => {
       if (wsRef.current) return;
-  
+
       const wsUrl = "wss://api.expengo.com";
       console.log("Connecting to WebSocket:", wsUrl);
       wsRef.current = new WebSocket(wsUrl);
-  
+
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
         setWsConnected(true);
@@ -460,14 +460,14 @@ const CabSearch = () => {
           driverId: adminId.current,
         }));
       };
-  
+
       wsRef.current.onerror = (error) => {
         console.error("WebSocket error:", error);
         setWsConnected(false);
         wsRef.current = null;
         setTimeout(connectWebSocket, 5000); // Retry
       };
-  
+
       wsRef.current.onclose = () => {
         console.log("WebSocket disconnected");
         setWsConnected(false);
@@ -475,14 +475,14 @@ const CabSearch = () => {
         setTimeout(connectWebSocket, 5000); // Retry
       };
     };
-  
+
     connectWebSocket();
-  
+
     return () => {
       if (wsRef.current) wsRef.current.close();
     };
   }, []);
-  
+
   useEffect(() => {
     if (showMap && selectedDriver && mapLoaded) {
       initializeMap();
@@ -496,7 +496,7 @@ const CabSearch = () => {
 
     console.log("Latitude:", latitude);
     console.log("Longitude:", longitude);
-    
+
     return {
       latitude,
       longitude,
@@ -1074,8 +1074,8 @@ const CabSearch = () => {
             </div>
           </>
         )
-      }
     }
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-800">
@@ -1224,10 +1224,10 @@ const CabSearch = () => {
                           </div>
                         </td>
                         <td className="p-2">
-                          {/* <PDFDownloadLink
+                          <PDFDownloadLink
                             document={
                               <InvoicePDF
-                              cabData={cabData}
+                                cabData={cabData}
                                 trip={item}
                                 companyLogo={companyLogo}
                                 signature={signature}
@@ -1245,7 +1245,7 @@ const CabSearch = () => {
                                 {loading ? "Generating PDF..." : "Download Invoice"}
                               </button>
                             )}
-                          </PDFDownloadLink> */}
+                          </PDFDownloadLink>
                         </td>
                       </tr>
                     ))
@@ -1311,7 +1311,7 @@ const CabSearch = () => {
                         <MapPin size={16} />
                       </button>
                     </div>
-                    {/* <PDFDownloadLink
+                    <PDFDownloadLink
                       document={
                         <InvoicePDF
                           trip={item}
@@ -1331,7 +1331,7 @@ const CabSearch = () => {
                           {loading ? "Generating PDF..." : "Download Invoice"}
                         </button>
                       )}
-                    </PDFDownloadLink> */}
+                    </PDFDownloadLink>
                   </div>
                 ))
               ) : (
