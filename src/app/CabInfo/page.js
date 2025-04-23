@@ -409,8 +409,8 @@ const CabSearch = () => {
       }
 
       try {
-        const wsUrl = "wss://localhost:5000"; // Update with your WebSocket server URL
-        console.log("Connecting to WebSocket server at:", wsUrl);
+        const wsUrl = "wss://car-expenses-backend.vercel.app";       
+         console.log("Connecting to WebSocket server at:", wsUrl);
         wsRef.current = new WebSocket(wsUrl);
 
         wsRef.current.onopen = () => {
@@ -494,6 +494,7 @@ const CabSearch = () => {
     }
   }, [showMap, selectedDriver, mapLoaded, initializeMap]);
 
+  
   // Calculate position along the route based on progress
   const calculatePositionAlongRoute = (from, to, progress) => {
     const latitude = from.lat + (to.lat - from.lat) * progress;
