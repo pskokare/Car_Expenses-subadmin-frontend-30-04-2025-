@@ -14,6 +14,8 @@ import { BsClipboardCheck } from "react-icons/bs";
 import { motion, useAnimation } from 'framer-motion';
 import { useInView } from 'react-intersection-observer';
 import  baseURL from '@/utils/api';
+import { useRouter } from 'next/navigation';
+
 
 const AnimatedCounter = ({ value, prefix = '', suffix = '', duration = 1.5 }) => {
     const controls = useAnimation();
@@ -40,6 +42,29 @@ const AnimatedCounter = ({ value, prefix = '', suffix = '', duration = 1.5 }) =>
     );
 };
 
+const AccessDeniedModal = () => {
+    const router = useRouter();
+
+    const handleClose = () => {
+        router.push('/');
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+            <div className="bg-white text-black p-8 rounded-lg shadow-lg max-w-sm w-full">
+                <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
+                <p className="mb-6">Your access has been restricted. Please contact the administrator.</p>
+                <button
+                    onClick={handleClose}
+                    className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+                >
+                    Close
+                </button>
+            </div>
+        </div>
+    );
+};
+
 const AdminDashboard = () => {
     const [stats, setStats] = useState({
         totalDrivers: 0,
@@ -52,9 +77,43 @@ const AdminDashboard = () => {
     const [expenseBreakdown, setExpenseBreakdown] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const router = useRouter()
+    const [showAccessDenied, setShowAccessDenied] = useState(false);
+
+
+    useEffect(() =>{
+        const checkUserStatusAndFetchData = async () => {
+            const token = localStorage.getItem('token');
+            const id = localStorage.getItem('id');
+
+            if (!token || !id) {
+                router.push('/login');
+                return;
+            }
+
+            try {
+                const subAdminsRes = await axios.get(`${baseURL}api/admin/getAllSubAdmins`);
+                const loggedInUser = subAdminsRes.data.subAdmins.find((e) => e._id === id);
+
+                if (loggedInUser?.status === 'Inactive') {
+                    localStorage.clear();
+                    setShowAccessDenied(true);
+                    return;
+                }
+            } catch (err) {
+                console.error('Error checking user status:', err);
+                router.push('/login');
+                return;
+            }
+    };
+    checkUserStatusAndFetchData();
+}, [router]);
+
+
 
     useEffect(() => {
         const fetchDashboardData = async () => {
+     
             try {
                 setLoading(true);
                 setError(null);
@@ -129,6 +188,8 @@ const AdminDashboard = () => {
             <Sidebar />
 
             <div className="p-8 mt-20 md:ml-60 sm:mt-0 flex-1">
+            {showAccessDenied && <AccessDeniedModal />}
+
                 <motion.h1
                     className="text-3xl font-bold mb-6 text-center text-gray-200"
                     initial={{ opacity: 0, y: -20 }}

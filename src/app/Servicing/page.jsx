@@ -4,8 +4,32 @@ import Sidebar from "../slidebar/page";
 import axios from "axios";
 import { motion } from "framer-motion";
 import baseURL from "@/utils/api";
+import { useRouter } from "next/navigation"
 
+const AccessDeniedModal = () => {
+  const router = useRouter()
+
+  const handleClose = () => {
+    router.push("/")
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+      <div className="bg-white text-black p-8 rounded-lg shadow-lg max-w-sm w-full">
+        <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
+        <p className="mb-6">Your access has been restricted. Please contact the administrator.</p>
+        <button onClick={handleClose} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
 export default function CabService() {
+  const router = useRouter()
+  // Add this state
+  const [showAccessDenied, setShowAccessDenied] = useState(false)
+
   const [drivers, setDrivers] = useState([]);
   const [cabs, setCabs] = useState([]);
   const [services, setServices] = useState([]);
@@ -17,6 +41,32 @@ export default function CabService() {
 
   const token = typeof window !== "undefined" && localStorage.getItem("token");
   const assignedBy = typeof window !== "undefined" && localStorage.getItem("id");
+
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        const id = localStorage.getItem("id")
+        if (!id) {
+          router.push("/")
+          return
+        }
+
+        const subAdminsRes = await axios.get(`${baseURL}api/admin/getAllSubAdmins`)
+        const loggedInUser = subAdminsRes.data.subAdmins.find((e) => e._id === id)
+
+        if (loggedInUser?.status === "Inactive") {
+          localStorage.clear()
+          setShowAccessDenied(true)
+          return
+        }
+      } catch (err) {
+        console.error("Error checking user status:", err)
+      }
+    }
+
+    checkUserStatus()
+  }, [router])
+
 
   useEffect(() => {
     fetchInitialData();
@@ -78,6 +128,8 @@ export default function CabService() {
     <div className="flex bg-gray-900 min-h-screen text-white">
       <Sidebar />
       <div className="flex-1 p-6 mt-20 sm:mt-0 md:ml-60">
+      {showAccessDenied && <AccessDeniedModal />}
+
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Servicing Assignments</h2>
           <button

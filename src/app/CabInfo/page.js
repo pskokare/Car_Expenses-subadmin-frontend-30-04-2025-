@@ -7,12 +7,34 @@ import LeafletMap from "../components/LeafletMap";
 import baseURL from "@/utils/api";
 import Image from 'next/image';
 import InvoiceButton from "../components/InvoiceButton";
+import { useRouter } from "next/navigation"
 
+const AccessDeniedModal = () => {
+  const router = useRouter()
+
+  const handleClose = () => {
+    router.push("/")
+  }
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+      <div className="bg-white text-black p-8 rounded-lg shadow-lg max-w-sm w-full">
+        <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
+        <p className="mb-6">Your access has been restricted. Please contact the administrator.</p>
+        <button onClick={handleClose} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
 
 // Create a driver location storage
 const driverLocations = {};
 
 const CabSearch = () => {
+  const router = useRouter()
+  // Add this state
+  const [showAccessDenied, setShowAccessDenied] = useState(false)
   const [cabNumber, setCabNumber] = useState("")
   const [cabDetails, setCabDetails] = useState([])
   const [filteredCabs, setFilteredCabs] = useState([])
@@ -239,6 +261,32 @@ const CabSearch = () => {
 
     fetchAdminData()
   }, [generateInvoiceNumber])
+
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        const id = localStorage.getItem("id")
+        if (!id) {
+          router.push("/")
+          return
+        }
+
+        const subAdminsRes = await axios.get(`${baseURL}api/admin/getAllSubAdmins`)
+        const loggedInUser = subAdminsRes.data.subAdmins.find((e) => e._id === id)
+
+        if (loggedInUser?.status === "Inactive") {
+          localStorage.clear()
+          setShowAccessDenied(true)
+          return
+        }
+      } catch (err) {
+        console.error("Error checking user status:", err)
+      }
+    }
+
+    checkUserStatus()
+  }, [router])
+
 
   useEffect(() => {
     const fetchAssignedCabs = async () => {
@@ -992,9 +1040,10 @@ const CabSearch = () => {
     <div className="flex min-h-screen bg-gray-800">
       {/* Sidebar */}
       <Sidebar />
-
+                 
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 md:ml-60 mt-20 sm:mt-0 text-white transition-all duration-300">
+      {showAccessDenied && <AccessDeniedModal />}
         {notification && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
             <div className="bg-indigo-600 text-white px-6 py-3 rounded-md shadow-lg transition-all duration-300 animate-fadeIn">

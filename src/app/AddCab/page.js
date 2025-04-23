@@ -6,6 +6,7 @@ import { FaCar, FaClipboardList, FaCalendarAlt, FaUpload } from "react-icons/fa"
 import { motion } from "framer-motion";
 import baseURL from '@/utils/api'
 
+
 const AddCab = () => {
     const [formData, setFormData] = useState({
         cabNumber: "",

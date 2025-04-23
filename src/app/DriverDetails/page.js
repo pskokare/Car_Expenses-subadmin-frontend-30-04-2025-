@@ -23,10 +23,35 @@ import axios from "axios"
 import { motion } from "framer-motion"
 import baseURL from "@/utils/api"
 import Image from "next/image"
+import { useRouter } from "next/navigation"
+
+const AccessDeniedModal = () => {
+  const router = useRouter()
+
+  const handleClose = () => {
+    router.push("/")
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+      <div className="bg-white text-black p-8 rounded-lg shadow-lg max-w-sm w-full">
+        <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
+        <p className="mb-6">Your access has been restricted. Please contact the administrator.</p>
+        <button onClick={handleClose} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
+
 
 
 const Driver = () => {
   // Driver list state
+  const router = useRouter()
+  // Add this state
+  const [showAccessDenied, setShowAccessDenied] = useState(false)
   const [profileImageName, setProfileImageName] = useState('');
   const [licenseImageName, setLicenseImageName] = useState('');
   const [adharImageName, setAdharImageName] = useState('');
@@ -71,6 +96,32 @@ const Driver = () => {
     setModalImage(imageUrl);
     setShowModal(true);
   };
+
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        const id = localStorage.getItem("id")
+        if (!id) {
+          router.push("/")
+          return
+        }
+
+        const subAdminsRes = await axios.get(`${baseURL}api/admin/getAllSubAdmins`)
+        const loggedInUser = subAdminsRes.data.subAdmins.find((e) => e._id === id)
+
+        if (loggedInUser?.status === "Inactive") {
+          localStorage.clear()
+          setShowAccessDenied(true)
+          return
+        }
+      } catch (err) {
+        console.error("Error checking user status:", err)
+      }
+    }
+
+    checkUserStatus()
+  }, [router])
+
 
   useEffect(() => {
     fetchDrivers()
@@ -281,7 +332,8 @@ const Driver = () => {
       <Sidebar />
 
       <div className="flex-1 p-4 md:p-6 md:ml-60 mt-20 sm:mt-0 transition-all duration-300">
-        <ToastContainer />
+      {showAccessDenied && <AccessDeniedModal />}
+       <ToastContainer />
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-xl md:text-2xl lg:text-3xl font-bold text-white">Driver Details</h1>
           <button

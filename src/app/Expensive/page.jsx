@@ -6,13 +6,61 @@ import Sidebar from "../slidebar/page"
 import * as XLSX from "xlsx"
 import { saveAs } from "file-saver"
 import baseURL from "@/utils/api"
+import { useRouter } from "next/navigation"
 
+const AccessDeniedModal = () => {
+  const router = useRouter()
+
+  const handleClose = () => {
+    router.push("/")
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+      <div className="bg-white text-black p-8 rounded-lg shadow-lg max-w-sm w-full">
+        <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
+        <p className="mb-6">Your access has been restricted. Please contact the administrator.</p>
+        <button onClick={handleClose} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+          Close
+        </button>
+      </div>
+    </div>
+  )
+}
 const CabExpenses = () => {
+  const router = useRouter()
+  const [showAccessDenied, setShowAccessDenied] = useState(false)
   const [expenses, setExpenses] = useState([])
   const [searchQuery, setSearchQuery] = useState("")
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
   const [loading, setLoading] = useState(false)
+
+  
+  useEffect(() => {
+    const checkUserStatus = async () => {
+      try {
+        const id = localStorage.getItem("id")
+        if (!id) {
+          router.push("/")
+          return
+        }
+
+        const subAdminsRes = await axios.get(`${baseURL}api/admin/getAllSubAdmins`)
+        const loggedInUser = subAdminsRes.data.subAdmins.find((e) => e._id === id)
+
+        if (loggedInUser?.status === "Inactive") {
+          localStorage.clear()
+          setShowAccessDenied(true)
+          return
+        }
+      } catch (err) {
+        console.error("Error checking user status:", err)
+      }
+    }
+
+    checkUserStatus()
+  }, [router])
 
   const exportToExcel = () => {
     if (expenses.length === 0) {
@@ -109,6 +157,8 @@ const CabExpenses = () => {
       <Sidebar />
 
       <div className="flex-1 md:ml-60 p-4 md:p-6 text-white mt-20 sm:mt-0 transition-all duration-300">
+      {showAccessDenied && <AccessDeniedModal />}
+
         <h1 className="text-xl md:text-2xl font-bold mb-4">Cab Expengo</h1>
 
         <div className="space-y-4 mb-6">
