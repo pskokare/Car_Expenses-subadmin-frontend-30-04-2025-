@@ -88,6 +88,12 @@
 
 // export default InvoicePDFDownloader
 
+
+
+
+
+
+
 "use client";
 
 import { useState } from "react";
@@ -108,13 +114,19 @@ const InvoicePDFDownloader = ({
   const [generating, setGenerating] = useState(false);
 
   const handleDownload = async () => {
+    // Basic validation before request
+    if (!trip || !trip.driverId || !trip.cab?.cabNumber) {
+      alert("Missing required trip or cab data. Please check.");
+      return;
+    }
+
     try {
       setGenerating(true);
 
       const payload = {
-        driverId: trip?.driverId,
-        cabNumber: trip?.cab?.cabNumber,
-        assignedBy: trip?.assignedBy,
+        driverId: trip.driverId,
+        cabNumber: trip.cab.cabNumber,
+        assignedBy: trip.assignedBy,
         trip,
         cabData,
         cabExpense,
@@ -126,7 +138,6 @@ const InvoicePDFDownloader = ({
         companyName,
         invoiceDate,
       };
-      
 
       const response = await fetch(`${baseURL}api/assigncab`, {
         method: "POST",
@@ -137,19 +148,19 @@ const InvoicePDFDownloader = ({
         body: JSON.stringify(payload),
       });
 
-      console.log("Request sent to:", `${baseURL}api/assigncab`);
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error("Backend error:", errorText);
-        throw new Error("Failed to generate PDF");
+        console.error("Backend error:", errorText || response.statusText);
+        alert(`PDF generation failed: ${errorText || "Unknown error"}`);
+        return;
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
 
-      const cabNumber = trip?.cab?.cabNumber || "cab";
+      const cabNumber = trip.cab.cabNumber || "cab";
       link.href = url;
       link.download = `Invoice-${cabNumber}.pdf`;
 
@@ -158,8 +169,8 @@ const InvoicePDFDownloader = ({
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error("Error downloading PDF:", error);
-      alert("Failed to generate PDF. Please try again.");
+      console.error("Download error:", error);
+      alert("Failed to download the invoice. Please try again.");
     } finally {
       setGenerating(false);
     }
