@@ -200,7 +200,7 @@ export default function AssignCab() {
           setShowAddCabForm(false)
         }, 1500)
       } else {
-        setCabFormErrors({ apiError: data.error || "Something went wrong" })
+        setCabFormErrors({ apiError: data.error || "Cab Already Exists" })
       }
     } catch (error) {
       setCabFormErrors({ apiError: "Server error, try again later" })

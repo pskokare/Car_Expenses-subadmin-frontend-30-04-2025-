@@ -124,11 +124,19 @@ export default function CabService() {
     }
   };
 
+  const calculateKmTravelled = (meterReadings) => {
+    if (!Array.isArray(meterReadings) || meterReadings.length === 0) return 0;
+
+    const totalKm = meterReadings.reduce((sum, value) => sum + (Number(value) || 0), 0);
+    return totalKm;
+  };
+
+
   return (
     <div className="flex bg-gray-900 min-h-screen text-white">
       <Sidebar />
       <div className="flex-1 p-6 mt-20 sm:mt-0 md:ml-60">
-      {showAccessDenied && <AccessDeniedModal />}
+        {showAccessDenied && <AccessDeniedModal />}
 
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Servicing Assignments</h2>
@@ -302,9 +310,9 @@ export default function CabService() {
 
         {/* ✅ Receipt Modal */}
         {showReceiptModal && (
-           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
-           <div className="bg-white rounded-lg shadow-lg p-4 w-[90%] md:w-[600px] h-[80%] max-h-[90%] overflow-auto relative">
-       
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+            <div className="bg-white rounded-lg shadow-lg p-4 w-[90%] md:w-[600px] h-[80%] max-h-[90%] overflow-auto relative">
+
               <h3 className="text-xl font-semibold mb-4">Receipt Image</h3>
               <img
                 src={receiptImage}
@@ -327,14 +335,6 @@ export default function CabService() {
   );
 }
 
-// Helper function to calculate km travelled from meter readings
-const calculateKmTravelled = (meterReadings) => {
-  let totalKm = 0;
-  for (let i = 1; i < meterReadings.length; i++) {
-    const diff = meterReadings[i] - meterReadings[i - 1];
-    if (diff > 0) totalKm += diff;
-  }
-  return totalKm / 1000;
-};
+
 
 

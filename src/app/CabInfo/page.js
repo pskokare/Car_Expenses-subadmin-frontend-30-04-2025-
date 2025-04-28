@@ -1,3 +1,4 @@
+
 // "use client";
 // import { useState, useEffect, useRef, useCallback } from "react";
 // import Sidebar from "../slidebar/page";
@@ -7,7 +8,7 @@
 // import baseURL from "@/utils/api";
 // import Image from 'next/image';
 // import InvoiceButton from "../components/InvoiceButton";
-// import { useRouter } from "next/navigation"
+// import { useRouter, redirect } from "next/navigation"
 
 // const AccessDeniedModal = () => {
 //   const router = useRouter()
@@ -401,47 +402,108 @@
 //   };
 
 //   useEffect(() => {
-//     if (typeof window === 'undefined') return; // Skip on server-side
-
+//     if (typeof window === "undefined") return; // Don't run on server side
+  
+//     let reconnectTimeout; // Save timeout ID to clear later
+  
 //     const connectWebSocket = () => {
-//       if (wsRef.current) return;
-
-//       const wsUrl = "ws://api.expengo.com";
+//       if (wsRef.current) return; // Already connected
+  
+//       const wsUrl = "wss://api.expengo.com/";  // Make sure this URL is correct
+  
 //       console.log("Connecting to WebSocket:", wsUrl);
-//       wsRef.current = new WebSocket(wsUrl);
-
-//       wsRef.current.onopen = () => {
+  
+//       const socket = new WebSocket(wsUrl);
+//       wsRef.current = socket;
+  
+//       socket.onopen = () => {
 //         console.log("WebSocket connected");
 //         setWsConnected(true);
-//         wsRef.current.send(JSON.stringify({
-//           type: "register",
-//           role: "admin",
-//           driverId: adminId.current,
-//         }));
+  
+//         // Send registration payload
+//         socket.send(
+//           JSON.stringify({
+//             type: "register",
+//             role: "admin",
+//             driverId: adminId.current, // Assuming this is correct
+//           })
+//         );
 //       };
-
-//       wsRef.current.onerror = (error) => {
-//         console.error("WebSocket error:", error);
-//         setWsConnected(false);
-//         wsRef.current = null;
-//         setTimeout(connectWebSocket, 5000); // Retry
+  
+//       socket.onmessage = (event) => {
+//         try {
+//           const data = JSON.parse(event.data);
+  
+//           if (data.type === "register_confirmation") {
+//             console.log("Registration confirmed:", data.message);
+//           }
+  
+//           if (data.type === "location_update") {
+//             console.log("Received location update:", data);
+  
+//             if (data.driverId && data.location) {
+//               setDriverLocations((prev) => ({
+//                 ...prev,
+//                 [data.driverId]: data.location,
+//               }));
+  
+//               // Update selectedDriver if matches
+//               setSelectedDriver((prev) => {
+//                 if (!prev || !prev.driver) return prev;
+  
+//                 if (prev.driver._id === data.driverId) {
+//                   return {
+//                     ...prev,
+//                     driver: {
+//                       ...prev.driver,
+//                       location: data.location,
+//                     },
+//                   };
+//                 }
+//                 return prev;
+//               });
+  
+//               if (markerRef.current && mapRef.current) {
+//                 updateMapMarker(data.location); // Make sure this function exists
+//               }
+//             }
+//           }
+//         } catch (error) {
+//           console.error("Error parsing WebSocket message:", error);
+//         }
 //       };
-
-//       wsRef.current.onclose = () => {
-//         console.log("WebSocket disconnected");
+  
+//       socket.onerror = (event) => {
+//         console.error("WebSocket encountered error:", event);
 //         setWsConnected(false);
-//         wsRef.current = null;
-//         setTimeout(connectWebSocket, 5000); // Retry
+//         cleanupAndReconnect();
+//       };
+  
+//       socket.onclose = (event) => {
+//         console.warn("WebSocket closed:", event.reason || "No reason provided");
+//         setWsConnected(false);
+//         cleanupAndReconnect();
 //       };
 //     };
-
+  
+//     const cleanupAndReconnect = () => {
+//       if (wsRef.current) {
+//         wsRef.current.close();
+//         wsRef.current = null;
+//       }
+//       reconnectTimeout = setTimeout(connectWebSocket, 5000); // Reconnect after 5 seconds
+//     };
+  
 //     connectWebSocket();
-
+  
 //     return () => {
-//       if (wsRef.current) wsRef.current.close();
+//       if (reconnectTimeout) clearTimeout(reconnectTimeout);
+//       if (wsRef.current) {
+//         wsRef.current.close();
+//         wsRef.current = null;
+//       }
 //     };
-//   }, []);
-
+//   }, [selectedDriver, filteredCabs]); 
 //   useEffect(() => {
 //     if (showMap && selectedDriver && mapLoaded) {
 //       initializeMap();
@@ -657,6 +719,7 @@
 //   };
 
 //   const handleLocationClick = (item) => {
+
 //     // Make sure we have a valid driver
 //     if (!item.driver) {
 //       showNotification("⚠️ No driver information available");
@@ -664,7 +727,7 @@
 //     }
 
 //     // Get the latest location from WebSocket if available
-//     const latestLocation = driverLocations[item.driver.id] || item.driver.location;
+//     const latestLocation = driverLocations[item.driver._id] || item.driver.location;
 
 //     // Set the selected driver with all necessary information
 //     setSelectedDriver({
@@ -683,18 +746,20 @@
 //       },
 //       cab: {
 //         ...item.cab,
+//         ...item.tripDetails,
 //         // Ensure route information is properly formatted
 //         location: {
-//           from: item.cab?.location?.from || "Pune",
-//           to: item.cab?.location?.to || "Pune",
-//           totalDistance: item.cab?.location?.totalDistance ||
-//             calculateRouteDistance(item.cab?.location?.from, item.cab?.location?.to)
+//           from: item.tripDetails?.location?.from,
+//           to: item.tripDetails?.location?.to,
+//           totalDistance: item.tripDetails?.location?.totalDistance ||
+//             calculateRouteDistance(item.tripDetails?.location?.from, item.tripDetails?.location?.to)
 //         }
 //       }
 //     });
 
 //     // Show the map modal
 //     setShowMap(true);
+
 //   };
 
 //   const calculateRouteDistance = (from, to) => {
@@ -798,6 +863,7 @@
 //     // No need to clean up Leaflet map as we're using React component
 //     setShowMap(false);
 //     setSelectedDriver(null);
+//     redirect('/Cabinfo')
 //   };
 
 //   const handleSearch = () => {
@@ -1040,10 +1106,10 @@
 //     <div className="flex min-h-screen bg-gray-800">
 //       {/* Sidebar */}
 //       <Sidebar />
-                 
+
 //       {/* Main Content */}
 //       <div className="flex-1 p-4 md:p-6 md:ml-60 mt-20 sm:mt-0 text-white transition-all duration-300">
-//       {showAccessDenied && <AccessDeniedModal />}
+//         {showAccessDenied && <AccessDeniedModal />}
 
 //         {notification && (
 //           <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1130,37 +1196,43 @@
 //                     <th className="p-3 text-left">Status</th>
 //                     <th className="p-3 text-left">Details</th>
 //                     <th className="p-3 text-left">Location</th>
-//                     <th className="p-2">Invoice</th>
+//                     <th className="p-2 text-center">Invoice</th>
 //                   </tr>
 //                 </thead>
 //                 <tbody>
 //                   {filteredCabs.length > 0 ? (
 //                     filteredCabs.map((item, index) => (
-//                       <tr key={index} className="border-b border-gray-600 hover:bg-gray-600 transition-colors">
+//                       <tr
+//                         key={index}
+//                         className="border-b border-gray-600 hover:bg-gray-600 transition-colors"
+//                       >
 //                         <td className="p-3">{index + 1}</td>
 //                         <td className="p-3 font-medium">{item.cab?.cabNumber || "N/A"}</td>
 //                         <td className="p-3">{item.driver?.name || "N/A"}</td>
 //                         <td className="p-3">
-//                           {item.assignedAt ? new Date(item.assignedAt).toLocaleDateString() : "N/A"}
+//                           {item.assignedAt
+//                             ? new Date(item.assignedAt).toLocaleDateString()
+//                             : "N/A"}
 //                         </td>
 //                         <td className="p-3">
-//                           {item.tripDetails?.location?.from || "N/A"} → {item.tripDetails?.location?.to || "N/A"}
+//                           {item.tripDetails?.location?.from || "N/A"} →{" "}
+//                           {item.tripDetails?.location?.to || "N/A"}
 //                         </td>
-//                         {/* <td className="p-3 text-green-500" >{item?.status} </td> */}
 //                         <td
 //                           className={`p-3 ${item?.status === "assigned"
-//                             ? "text-red-500 border-white"
-//                             : item?.status === "completed"
-//                               ? "text-green-500 border-white"
-//                               : "text-green-500 border-white"
+//                             ? "text-red-500"
+//                             : "text-green-500"
 //                             }`}
 //                         >
-//                           {item?.status}
+//                           {item?.status || "N/A"}
 //                         </td>
 //                         <td className="p-3">
 //                           <select
 //                             className="border p-1 rounded bg-gray-800 text-white"
-//                             onChange={(e) => e.target.value && openModal(e.target.value, item.tripDetails[e.target.value])}
+//                             onChange={(e) =>
+//                               e.target.value &&
+//                               openModal(e.target.value, item.tripDetails?.[e.target.value])
+//                             }
 //                           >
 //                             <option value="">Select</option>
 //                             <option value="fuel">Fuel</option>
@@ -1181,10 +1253,12 @@
 //                             >
 //                               <MapPin size={16} />
 //                             </button>
-//                             {item.driver?.location && <span className="text-xs text-green-400">Live</span>}
+//                             {item.driver?.location && (
+//                               <span className="text-xs text-green-400">Live</span>
+//                             )}
 //                           </div>
 //                         </td>
-//                         <td className="p-2">
+//                         <td className="p-2 text-center">
 //                           <InvoiceButton
 //                             item={item}
 //                             cabData={cabData}
@@ -1232,16 +1306,22 @@
 //                         <p>{item.tripDetails?.location?.totalDistance || "0"} KM</p>
 //                       </div>
 //                     </div>
+
 //                     <div className="mb-3">
 //                       <p className="text-gray-400 text-sm">Route</p>
 //                       <p>
-//                         {item.tripDetails?.location?.from || "N/A"} → {item.tripDetails?.location?.to || "N/A"}
+//                         {item.tripDetails?.location?.from || "N/A"} →{" "}
+//                         {item.tripDetails?.location?.to || "N/A"}
 //                       </p>
 //                     </div>
+
 //                     <div className="flex gap-2 mb-2">
 //                       <select
 //                         className="w-full border p-2 rounded bg-gray-800 text-white"
-//                         onChange={(e) => e.target.value && openModal(e.target.value, item.cab[e.target.value])}
+//                         onChange={(e) =>
+//                           e.target.value &&
+//                           openModal(e.target.value, item.tripDetails?.[e.target.value])
+//                         }
 //                       >
 //                         <option value="">View Details</option>
 //                         <option value="fuel">Fuel Details</option>
@@ -1250,6 +1330,7 @@
 //                         <option value="vehicleServicing">Servicing Details</option>
 //                         <option value="otherProblems">Other Problems</option>
 //                       </select>
+
 //                       <button
 //                         className={`text-green-400 p-2 rounded border border-gray-600 ${item.driver?.location ? "animate-pulse" : ""
 //                           }`}
@@ -1260,7 +1341,9 @@
 //                         <MapPin size={16} />
 //                       </button>
 //                     </div>
-//                     <td className="p-2">
+
+//                     {/* Invoice Button (correctly placed outside <table> or <tr>) */}
+//                     <div className="mt-2">
 //                       <InvoiceButton
 //                         item={item}
 //                         cabData={cabData}
@@ -1271,7 +1354,7 @@
 //                         invoiceNumber={invoiceNumber}
 //                         derivePrefix={derivePrefix}
 //                       />
-//                     </td>
+//                     </div>
 //                   </div>
 //                 ))
 //               ) : (
@@ -1279,6 +1362,7 @@
 //               )}
 //             </div>
 //           </>
+
 //         )}
 
 //         {/* Details Modal */}
@@ -1365,16 +1449,16 @@
 //                   location={selectedDriver.driver?.location}
 //                   driverName={selectedDriver.driver?.name}
 //                   cabNumber={selectedDriver.cab?.cabNumber}
-//                   routeFrom={selectedDriver.tripDetails?.location?.from}
-//                   routeTo={selectedDriver.tripDetails?.location?.to}
+//                   routeFrom={selectedDriver.cab?.location?.from}
+//                   routeTo={selectedDriver.cab?.location?.to}
 //                   onMapReady={(map) => {
 //                     console.log("Map is ready", map);
 //                     // Force a resize to ensure the map renders correctly
 //                     setTimeout(() => {
 //                       if (map) {
 //                         map.panTo({
-//                           lat: parseFloat(selectedDriver.driver?.location?.latitude) || 16.7050,
-//                           lng: parseFloat(selectedDriver.driver?.location?.longitude) || 74.2433
+//                           lat: parseFloat(selectedDriver.driver?.location?.latitude),
+//                           lng: parseFloat(selectedDriver.driver?.location?.longitude)
 //                         });
 //                       }
 //                     }, 100);
@@ -1422,19 +1506,6 @@
 // }
 
 // export default CabSearch
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1523,6 +1594,13 @@ const CabSearch = () => {
     setNotification(msg);
     setTimeout(() => setNotification(""), 3000);
   }, []);
+
+  useEffect(() => {
+    if (selectedDriver) {
+      console.log("Updated selectedDriver:", selectedDriver);
+    }
+  }, [selectedDriver]);
+  
 
   // Define cleanupMap callback before it's used
   const cleanupMap = useCallback(() => {
@@ -1844,15 +1922,15 @@ const CabSearch = () => {
   };
 
   useEffect(() => {
-    if (typeof window === 'undefined') return; // Skip on server-side
-
+    if (typeof window === 'undefined') return;
+  
     const connectWebSocket = () => {
       if (wsRef.current) return;
-
-      const wsUrl = "ws://car-expenses-backend.vercel.app/"; // Replace with your WebSocket URL
+  
+      const wsUrl = "wss://api.expengo.com/";
       console.log("Connecting to WebSocket:", wsUrl);
       wsRef.current = new WebSocket(wsUrl);
-
+  
       wsRef.current.onopen = () => {
         console.log("WebSocket connected");
         setWsConnected(true);
@@ -1862,29 +1940,64 @@ const CabSearch = () => {
           driverId: adminId.current,
         }));
       };
-
+  
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+      
+          if (data.type === "location_update") {
+            console.log("Received location update:", data);
+      
+            driverLocations[data.driverId] = data.location;
+      
+            setSelectedDriver(prev => {
+              if (!prev || !prev.driver) return prev;
+      
+              if (prev.driver._id === data.driverId) {
+                return {
+                  ...prev,
+                  driver: {
+                    ...prev.driver,
+                    location: {
+                      latitude: parseFloat(data.location.latitude),
+                      longitude: parseFloat(data.location.longitude),
+                      timestamp: data.location.timestamp || new Date().toISOString()
+                    }
+                  }
+                };
+              }
+              return prev;
+            });
+          }
+        } catch (err) {
+          console.error("Error parsing WebSocket message", err);
+        }
+      };
+      
+  
       wsRef.current.onerror = (error) => {
         console.error("WebSocket error:", error);
         setWsConnected(false);
         wsRef.current = null;
-        setTimeout(connectWebSocket, 5000); // Retry
+        setTimeout(connectWebSocket, 5000);
       };
-
+  
       wsRef.current.onclose = () => {
-        console.log("WebSocket disconnected");
+        console.log("WebSocket closed, reconnecting...");
         setWsConnected(false);
         wsRef.current = null;
-        setTimeout(connectWebSocket, 5000); // Retry
+        setTimeout(connectWebSocket, 5000);
       };
     };
-
+  
     connectWebSocket();
-
+  
     return () => {
       if (wsRef.current) wsRef.current.close();
     };
-  }, []);
-
+  
+  }, []); // ❗ No [selectedDriver] here
+  
   useEffect(() => {
     if (showMap && selectedDriver && mapLoaded) {
       initializeMap();
@@ -2107,8 +2220,10 @@ const CabSearch = () => {
     }
 
     // Get the latest location from WebSocket if available
-    const latestLocation = driverLocations[item.driver.id] || item.driver.location;
+    const latestLocation = driverLocations[item.driver?._id] || item.driver.location;
 
+    console.log("driver location",item)
+    
     // Set the selected driver with all necessary information
     setSelectedDriver({
       driver: {
@@ -2126,12 +2241,13 @@ const CabSearch = () => {
       },
       cab: {
         ...item.cab,
+        ...item.tripDetails,
         // Ensure route information is properly formatted
         location: {
-          from: item.cab?.location?.from || "Pune",
-          to: item.cab?.location?.to || "Pune",
-          totalDistance: item.cab?.location?.totalDistance ||
-            calculateRouteDistance(item.cab?.location?.from, item.cab?.location?.to)
+          from: item.tripDetails?.location?.from,
+          to: item.tripDetails?.location?.to ,
+          totalDistance: item.tripDetails?.location?.totalDistance ||
+            calculateRouteDistance(item.tripDetails?.location?.from, item.tripDetails?.location?.to)
         }
       }
     });
@@ -2865,21 +2981,6 @@ const CabSearch = () => {
 }
 
 export default CabSearch
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

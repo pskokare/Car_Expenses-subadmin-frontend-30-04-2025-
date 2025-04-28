@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState, useRef } from "react"
@@ -68,6 +67,13 @@ const LeafletMap = ({
   onMapReady 
 }) => {
   // Google Maps reference
+
+  console.log("my location issur",location, 
+    driverName, 
+    cabNumber, 
+    routeFrom, 
+    routeTo,
+    onMapReady )
   const mapRef = useRef(null);
   const [selectedMarker, setSelectedMarker] = useState(null);
   
@@ -141,11 +147,17 @@ const LeafletMap = ({
         setLastUpdated(new Date(location.timestamp || new Date()));
         
         // Center map on driver if map is loaded
+        // if (mapRef.current && isMapLoaded) {
+        //   mapRef.current.panTo({
+        //     lat: lat,
+        //     lng: lng
+        //   });
+        // }
+
         if (mapRef.current && isMapLoaded) {
-          mapRef.current.panTo({
-            lat: lat,
-            lng: lng
-          });
+          const newCenter = { lat, lng };
+          mapRef.current.panTo(newCenter);
+          mapRef.current.setCenter(newCenter); // added
         }
       } else {
         console.warn("⚠️ Invalid coordinates received:", location);
@@ -376,13 +388,22 @@ const LeafletMap = ({
           )}
           
           {/* Driver marker with car icon - this is the real-time position */}
-          <Marker
+          {/* <Marker
             position={driverLocation}
             icon={markerIcons.car}
             label={{ text: driverName || "Driver", color: "#ffffff", fontWeight: "bold" }}
             onClick={() => setSelectedMarker("driver")}
-            animation={window.google?.maps.Animation.BOUNCE}
-          />
+            // animation={window.google?.maps.Animation.BOUNCE}
+          /> */}
+
+<Marker
+  key={driverLocation.lat + driverLocation.lng}  // force re-mount on location change
+  position={driverLocation}
+  icon={markerIcons.car}
+  label={{ text: driverName || "Driver", color: "#ffffff", fontWeight: "bold" }}
+  onClick={() => setSelectedMarker("driver")}
+/>
+
           
           {/* Pickup location marker */}
           {pickupLocation && (

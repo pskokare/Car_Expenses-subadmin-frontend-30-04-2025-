@@ -267,7 +267,7 @@ const AdminDashboard = () => {
                                 transition={{ duration: 0.5 }}
                             >
                                 <h2 className="text-lg font-semibold mb-4 text-gray-200">Monthly Expenses per Cab</h2>
-                                <ResponsiveContainer width="100%" height={250}>
+                                <ResponsiveContainer width="100%" height={250} >
                                     <BarChart data={expenseData}>
                                         <XAxis dataKey="month" stroke="#E5E7EB" />
                                         <YAxis stroke="#E5E7EB" />
