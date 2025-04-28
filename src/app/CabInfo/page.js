@@ -8,7 +8,7 @@
 // import baseURL from "@/utils/api";
 // import Image from 'next/image';
 // import InvoiceButton from "../components/InvoiceButton";
-// import { useRouter, redirect } from "next/navigation"
+// import { useRouter,redirect  } from "next/navigation"
 
 // const AccessDeniedModal = () => {
 //   const router = useRouter()
@@ -402,108 +402,88 @@
 //   };
 
 //   useEffect(() => {
-//     if (typeof window === "undefined") return; // Don't run on server side
-  
-//     let reconnectTimeout; // Save timeout ID to clear later
-  
+//     if (typeof window === 'undefined') return; // Skip on server-side
+
 //     const connectWebSocket = () => {
-//       if (wsRef.current) return; // Already connected
-  
-//       const wsUrl = "wss://api.expengo.com/";  // Make sure this URL is correct
-  
+//       if (wsRef.current) return;
+
+//       const wsUrl = "wss://api.expengo.com/"; // Replace with your WebSocket URL
 //       console.log("Connecting to WebSocket:", wsUrl);
-  
-//       const socket = new WebSocket(wsUrl);
-//       wsRef.current = socket;
-  
-//       socket.onopen = () => {
+//       wsRef.current = new WebSocket(wsUrl);
+
+//       wsRef.current.onopen = () => {
 //         console.log("WebSocket connected");
 //         setWsConnected(true);
-  
-//         // Send registration payload
-//         socket.send(
-//           JSON.stringify({
-//             type: "register",
-//             role: "admin",
-//             driverId: adminId.current, // Assuming this is correct
-//           })
-//         );
+//         wsRef.current.send(JSON.stringify({
+//           type: "register",
+//           role: "admin",
+//           driverId: adminId.current,
+//         }));
 //       };
-  
-//       socket.onmessage = (event) => {
+
+//       wsRef.current.onmessage = (event) => {
 //         try {
 //           const data = JSON.parse(event.data);
-  
+          
 //           if (data.type === "register_confirmation") {
 //             console.log("Registration confirmed:", data.message);
 //           }
-  
+          
 //           if (data.type === "location_update") {
 //             console.log("Received location update:", data);
-  
+            
+//             // Update driver location in the state
 //             if (data.driverId && data.location) {
-//               setDriverLocations((prev) => ({
-//                 ...prev,
-//                 [data.driverId]: data.location,
-//               }));
-  
-//               // Update selectedDriver if matches
-//               setSelectedDriver((prev) => {
-//                 if (!prev || !prev.driver) return prev;
-  
-//                 if (prev.driver._id === data.driverId) {
-//                   return {
-//                     ...prev,
-//                     driver: {
-//                       ...prev.driver,
-//                       location: data.location,
-//                     },
-//                   };
+//               // Store the location in driverLocations
+              
+//               console.log("data driverId",data.driverId,data.location)
+//               driverLocations[data.driverId] = data.location;
+              
+//               console.log("selected driver",selectedDriver)
+//               // If this is the currently selected driver, update the UI
+//         //      if (selectedDriver && selectedDriver.driver?.id === data.driverId) {
+//                 setSelectedDriver(prev => ({
+//                   ...prev,
+//                   driver: {
+//                     ...prev.driver,
+//                     location: data.location
+//                   }
+//                 }));
+                
+//                 // Update map marker if using Leaflet directly
+//                 if (markerRef.current && mapRef.current) {
+//                   updateMapMarker(data.location);
 //                 }
-//                 return prev;
-//               });
-  
-//               if (markerRef.current && mapRef.current) {
-//                 updateMapMarker(data.location); // Make sure this function exists
 //               }
-//             }
+//        //     }
 //           }
 //         } catch (error) {
-//           console.error("Error parsing WebSocket message:", error);
+//           console.error("Error processing WebSocket message:", error);
 //         }
 //       };
-  
-//       socket.onerror = (event) => {
-//         console.error("WebSocket encountered error:", event);
+
+//       wsRef.current.onerror = (error) => {
+//         console.error("WebSocket error:", error);
 //         setWsConnected(false);
-//         cleanupAndReconnect();
-//       };
-  
-//       socket.onclose = (event) => {
-//         console.warn("WebSocket closed:", event.reason || "No reason provided");
-//         setWsConnected(false);
-//         cleanupAndReconnect();
-//       };
-//     };
-  
-//     const cleanupAndReconnect = () => {
-//       if (wsRef.current) {
-//         wsRef.current.close();
 //         wsRef.current = null;
-//       }
-//       reconnectTimeout = setTimeout(connectWebSocket, 5000); // Reconnect after 5 seconds
+//         setTimeout(connectWebSocket, 5000); // Retry
+//       };
+
+//       wsRef.current.onclose = () => {
+//         console.log("WebSocket disconnected");
+//         setWsConnected(false);
+//         wsRef.current = null;
+//         setTimeout(connectWebSocket, 5000); // Retry
+//       };
 //     };
-  
+
 //     connectWebSocket();
-  
+
 //     return () => {
-//       if (reconnectTimeout) clearTimeout(reconnectTimeout);
-//       if (wsRef.current) {
-//         wsRef.current.close();
-//         wsRef.current = null;
-//       }
+//       if (wsRef.current) wsRef.current.close();
 //     };
-//   }, [selectedDriver, filteredCabs]); 
+//   }, [selectedDriver, filteredCabs]); // Add selectedDriver and filteredCabs to dependencies
+
 //   useEffect(() => {
 //     if (showMap && selectedDriver && mapLoaded) {
 //       initializeMap();
@@ -719,7 +699,7 @@
 //   };
 
 //   const handleLocationClick = (item) => {
-
+  
 //     // Make sure we have a valid driver
 //     if (!item.driver) {
 //       showNotification("⚠️ No driver information available");
@@ -1106,10 +1086,10 @@
 //     <div className="flex min-h-screen bg-gray-800">
 //       {/* Sidebar */}
 //       <Sidebar />
-
+                 
 //       {/* Main Content */}
 //       <div className="flex-1 p-4 md:p-6 md:ml-60 mt-20 sm:mt-0 text-white transition-all duration-300">
-//         {showAccessDenied && <AccessDeniedModal />}
+//       {showAccessDenied && <AccessDeniedModal />}
 
 //         {notification && (
 //           <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1196,43 +1176,37 @@
 //                     <th className="p-3 text-left">Status</th>
 //                     <th className="p-3 text-left">Details</th>
 //                     <th className="p-3 text-left">Location</th>
-//                     <th className="p-2 text-center">Invoice</th>
+//                     <th className="p-2">Invoice</th>
 //                   </tr>
 //                 </thead>
 //                 <tbody>
 //                   {filteredCabs.length > 0 ? (
 //                     filteredCabs.map((item, index) => (
-//                       <tr
-//                         key={index}
-//                         className="border-b border-gray-600 hover:bg-gray-600 transition-colors"
-//                       >
+//                       <tr key={index} className="border-b border-gray-600 hover:bg-gray-600 transition-colors">
 //                         <td className="p-3">{index + 1}</td>
 //                         <td className="p-3 font-medium">{item.cab?.cabNumber || "N/A"}</td>
 //                         <td className="p-3">{item.driver?.name || "N/A"}</td>
 //                         <td className="p-3">
-//                           {item.assignedAt
-//                             ? new Date(item.assignedAt).toLocaleDateString()
-//                             : "N/A"}
+//                           {item.assignedAt ? new Date(item.assignedAt).toLocaleDateString() : "N/A"}
 //                         </td>
 //                         <td className="p-3">
-//                           {item.tripDetails?.location?.from || "N/A"} →{" "}
-//                           {item.tripDetails?.location?.to || "N/A"}
+//                           {item.tripDetails?.location?.from || "N/A"} → {item.tripDetails?.location?.to || "N/A"}
 //                         </td>
+//                         {/* <td className="p-3 text-green-500" >{item?.status} </td> */}
 //                         <td
 //                           className={`p-3 ${item?.status === "assigned"
-//                             ? "text-red-500"
-//                             : "text-green-500"
+//                             ? "text-red-500 border-white"
+//                             : item?.status === "completed"
+//                               ? "text-green-500 border-white"
+//                               : "text-green-500 border-white"
 //                             }`}
 //                         >
-//                           {item?.status || "N/A"}
+//                           {item?.status}
 //                         </td>
 //                         <td className="p-3">
 //                           <select
 //                             className="border p-1 rounded bg-gray-800 text-white"
-//                             onChange={(e) =>
-//                               e.target.value &&
-//                               openModal(e.target.value, item.tripDetails?.[e.target.value])
-//                             }
+//                             onChange={(e) => e.target.value && openModal(e.target.value, item.tripDetails[e.target.value])}
 //                           >
 //                             <option value="">Select</option>
 //                             <option value="fuel">Fuel</option>
@@ -1253,12 +1227,10 @@
 //                             >
 //                               <MapPin size={16} />
 //                             </button>
-//                             {item.driver?.location && (
-//                               <span className="text-xs text-green-400">Live</span>
-//                             )}
+//                             {item.driver?.location && <span className="text-xs text-green-400">Live</span>}
 //                           </div>
 //                         </td>
-//                         <td className="p-2 text-center">
+//                         <td className="p-2">
 //                           <InvoiceButton
 //                             item={item}
 //                             cabData={cabData}
@@ -1306,22 +1278,16 @@
 //                         <p>{item.tripDetails?.location?.totalDistance || "0"} KM</p>
 //                       </div>
 //                     </div>
-
 //                     <div className="mb-3">
 //                       <p className="text-gray-400 text-sm">Route</p>
 //                       <p>
-//                         {item.tripDetails?.location?.from || "N/A"} →{" "}
-//                         {item.tripDetails?.location?.to || "N/A"}
+//                         {item.tripDetails?.location?.from || "N/A"} → {item.tripDetails?.location?.to || "N/A"}
 //                       </p>
 //                     </div>
-
 //                     <div className="flex gap-2 mb-2">
 //                       <select
 //                         className="w-full border p-2 rounded bg-gray-800 text-white"
-//                         onChange={(e) =>
-//                           e.target.value &&
-//                           openModal(e.target.value, item.tripDetails?.[e.target.value])
-//                         }
+//                         onChange={(e) => e.target.value && openModal(e.target.value, item.cab[e.target.value])}
 //                       >
 //                         <option value="">View Details</option>
 //                         <option value="fuel">Fuel Details</option>
@@ -1330,7 +1296,6 @@
 //                         <option value="vehicleServicing">Servicing Details</option>
 //                         <option value="otherProblems">Other Problems</option>
 //                       </select>
-
 //                       <button
 //                         className={`text-green-400 p-2 rounded border border-gray-600 ${item.driver?.location ? "animate-pulse" : ""
 //                           }`}
@@ -1341,9 +1306,7 @@
 //                         <MapPin size={16} />
 //                       </button>
 //                     </div>
-
-//                     {/* Invoice Button (correctly placed outside <table> or <tr>) */}
-//                     <div className="mt-2">
+//                     <td className="p-2">
 //                       <InvoiceButton
 //                         item={item}
 //                         cabData={cabData}
@@ -1354,7 +1317,7 @@
 //                         invoiceNumber={invoiceNumber}
 //                         derivePrefix={derivePrefix}
 //                       />
-//                     </div>
+//                     </td>
 //                   </div>
 //                 ))
 //               ) : (
@@ -1362,7 +1325,6 @@
 //               )}
 //             </div>
 //           </>
-
 //         )}
 
 //         {/* Details Modal */}
@@ -1506,6 +1468,7 @@
 // }
 
 // export default CabSearch
+
 
 
 
@@ -1928,11 +1891,9 @@ const CabSearch = () => {
       if (wsRef.current) return;
   
       const wsUrl = "wss://api.expengo.com/";
-      console.log("Connecting to WebSocket:", wsUrl);
       wsRef.current = new WebSocket(wsUrl);
   
       wsRef.current.onopen = () => {
-        console.log("WebSocket connected");
         setWsConnected(true);
         wsRef.current.send(JSON.stringify({
           type: "register",
@@ -2616,8 +2577,8 @@ const CabSearch = () => {
 
         {/* WebSocket Connection Indicator */}
         <div className="flex items-center gap-2 mb-4">
-          <div className={`h-3 w-3 rounded-full ${wsConnected ? "bg-green-500" : "bg-red-500"}`}></div>
-          <span className="text-sm">{wsConnected ? "WebSocket Connected" : "WebSocket Disconnected"}</span>
+          <div className={`h-3 w-3 rounded-full ${wsConnected ? "" : ""}`}></div>
+          <span className="text-sm">{wsConnected ? "" : ""}</span>
         </div>
 
         {/* Search and Filter Section */}
@@ -2981,10 +2942,6 @@ const CabSearch = () => {
 }
 
 export default CabSearch
-
-
-
-
 
 
 

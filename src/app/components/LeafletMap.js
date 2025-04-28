@@ -1,9 +1,16 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { GoogleMap, LoadScript, Marker, InfoWindow, Polyline, DirectionsService, DirectionsRenderer } from "@react-google-maps/api"
+import {
+  GoogleMap,
+  LoadScript,
+  Marker,
+  InfoWindow,
+  DirectionsService,
+  DirectionsRenderer,
+} from "@react-google-maps/api"
 // Google Maps API Key
-const GOOGLE_MAPS_API_KEY = "AIzaSyCelDo4I5cPQ72TfCTQW-arhPZ7ALNcp8w";
+const GOOGLE_MAPS_API_KEY = "AIzaSyCelDo4I5cPQ72TfCTQW-arhPZ7ALNcp8w"
 
 // Define city coordinates for routing
 const cityLocations = {
@@ -13,17 +20,18 @@ const cityLocations = {
   Chennai: { lat: 13.0827, lng: 80.2707 },
   Kolkata: { lat: 22.5726, lng: 88.3639 },
   Hyderabad: { lat: 17.385, lng: 78.4867 },
-  Kolhapur: { lat: 16.7050, lng: 74.2433 }, // Added Kolhapur coordinates
-};
+  Kolhapur: { lat: 16.705, lng: 74.2433 },
+  Pune: { lat: 18.5204, lng: 73.8567 }, // Added Pune coordinates
+}
 
-// Default location (Kolhapur) when no coordinates are available
-const DEFAULT_LOCATION = { lat: 18.5614, lng: 73.9449 };
+// Default location (Pune) when no coordinates are available
+const DEFAULT_LOCATION = { lat: 18.5204, lng: 73.8567 }
 
 // Map container styles
 const mapContainerStyle = {
   width: "100%",
   height: "100%",
-};
+}
 
 // Map options
 const mapOptions = {
@@ -32,7 +40,7 @@ const mapOptions = {
   mapTypeControl: true,
   streetViewControl: false,
   fullscreenControl: true,
-};
+}
 
 // Custom marker icons
 const markerIcons = {
@@ -56,58 +64,45 @@ const markerIcons = {
     scaledSize: { width: 40, height: 40 },
     labelOrigin: { x: 20, y: -10 },
   },
-};
+}
 
-const LeafletMap = ({ 
-  location, 
-  driverName, 
-  cabNumber, 
-  routeFrom, 
-  routeTo,
-  onMapReady 
-}) => {
+const LeafletMap = ({ location, driverName, cabNumber, routeFrom, routeTo, onMapReady,routeCoordinates }) => {
   // Google Maps reference
+  const mapRef = useRef(null)
 
-  console.log("my location issur",location, 
-    driverName, 
-    cabNumber, 
-    routeFrom, 
-    routeTo,
-    onMapReady )
-  const mapRef = useRef(null);
-  const [selectedMarker, setSelectedMarker] = useState(null);
-  
+  console.log("we are coming from page.js",location)
+  const [selectedMarker, setSelectedMarker] = useState(null)
+
   // Convert location format from {latitude, longitude} to {lat, lng} for Google Maps
   const [driverLocation, setDriverLocation] = useState({
     lat: location?.latitude || DEFAULT_LOCATION.lat,
-    lng: location?.longitude || DEFAULT_LOCATION.lng
-  });
-  
-  const [pickupLocation, setPickupLocation] = useState(null);
-  const [dropoffLocation, setDropoffLocation] = useState(null);
-  const [lastUpdated, setLastUpdated] = useState(new Date());
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
-  const [directions, setDirections] = useState(null);
-  const [directionsRequested, setDirectionsRequested] = useState(false);
+    lng: location?.longitude || DEFAULT_LOCATION.lng,
+  })
 
+  const [pickupLocation, setPickupLocation] = useState(null)
+  const [dropoffLocation, setDropoffLocation] = useState(null)
+  const [lastUpdated, setLastUpdated] = useState(new Date())
+  const [isMapLoaded, setIsMapLoaded] = useState(false)
+  const [directions, setDirections] = useState(null)
+  const [directionsRequested, setDirectionsRequested] = useState(false)
+  const [marker, setMarker] = useState(null)
 
   const getCityCoordinates = (cityName) => {
-    if (!cityName) return null;
-    
-    // Check if it's a known city
-    const knownCity = Object.keys(cityLocations).find(
-      city => cityName.toLowerCase().includes(city.toLowerCase())
-    );
-    
-    if (knownCity) {
-      return cityLocations[knownCity];
-    }
-    
-    // Default to Kolhapur if city not found
-    console.log(`City coordinates not found for: ${cityName}, using default`);
-    return DEFAULT_LOCATION;
-  };
+    if (!cityName) return DEFAULT_LOCATION // Default to Pune if no city name provided
 
+    // Check if it's a known city
+    const knownCity = Object.keys(cityLocations).find((city) => cityName.toLowerCase().includes(city.toLowerCase()))
+
+    if (knownCity) {
+      return cityLocations[knownCity]
+    }
+
+    // Default to Pune if city not found
+    console.log(`City coordinates not found for: ${cityName}, using default (Pune)`)
+    return DEFAULT_LOCATION
+  }
+
+  
 
   // Log initial props
   useEffect(() => {
@@ -116,189 +111,217 @@ const LeafletMap = ({
       driverName,
       cabNumber,
       routeFrom,
-      routeTo
-    });
-  }, [cabNumber, driverName, location, routeFrom, routeTo]);
-  
+      routeTo,
+    })
+  }, [cabNumber, driverName, location, routeFrom, routeTo])
+
   // Add state for route path
-  const [routePath, setRoutePath] = useState([]);
-  
+  const [routePath, setRoutePath] = useState([])
+
   // Update driver position when location changes from WebSocket
   useEffect(() => {
-    console.log("🔍 Location data received:", location);
-    
+    console.log("🔍 Location data received:", location)
+
     if (location?.latitude && location?.longitude) {
       console.log("📍 Valid location data - updating driver position:", {
         lat: location.latitude,
         lng: location.longitude,
-        timestamp: location.timestamp || new Date()
-      });
-      
-      // Parse coordinates as floats to ensure they're numbers
-      const lat = parseFloat(location.latitude);
-      const lng = parseFloat(location.longitude);
-      
-      if (!isNaN(lat) && !isNaN(lng)) {
-        setDriverLocation({
-          lat: lat,
-          lng: lng
-        });
-        
-        setLastUpdated(new Date(location.timestamp || new Date()));
-        
-        // Center map on driver if map is loaded
-        // if (mapRef.current && isMapLoaded) {
-        //   mapRef.current.panTo({
-        //     lat: lat,
-        //     lng: lng
-        //   });
-        // }
+        timestamp: location.timestamp || new Date(),
+      })
 
-        if (mapRef.current && isMapLoaded) {
-          const newCenter = { lat, lng };
-          mapRef.current.panTo(newCenter);
-          mapRef.current.setCenter(newCenter); // added
+      // Parse coordinates as floats to ensure they're numbers
+      const lat = Number.parseFloat(location.latitude)
+      const lng = Number.parseFloat(location.longitude)
+
+      if (!isNaN(lat) && !isNaN(lng)) {
+        const newLocation = {
+          lat: lat,
+          lng: lng,
+        }
+
+        setDriverLocation(newLocation)
+        setLastUpdated(new Date(location.timestamp || new Date()))
+
+        // Update marker position if map is loaded
+        if (mapRef.current && isMapLoaded && marker) {
+          marker.setPosition(newLocation)
+          mapRef.current.panTo(newLocation)
         }
       } else {
-        console.warn("⚠️ Invalid coordinates received:", location);
+        console.warn("⚠️ Invalid coordinates received:", location)
       }
     } else {
-      console.warn("⚠️ Invalid or missing location data. Using default location.");
+      console.warn("⚠️ Invalid or missing location data. Using default location (Pune).")
     }
-  }, [location, isMapLoaded]);
-  
+  }, [location, isMapLoaded, marker])
+
   // Set pickup and dropoff locations based on routeFrom and routeTo
   useEffect(() => {
-    if (routeFrom) {
-      const fromCoords = getCityCoordinates(routeFrom);
-      setPickupLocation(fromCoords);
-    }
-    
-    if (routeTo) {
-      const toCoords = getCityCoordinates(routeTo);
-      setDropoffLocation(toCoords);
-    }
-  }, [routeFrom, routeTo]);
-  
+    // Always set pickup and dropoff locations, defaulting to Pune if not provided
+    const fromCoords = routeFrom ? getCityCoordinates(routeFrom) : DEFAULT_LOCATION
+    setPickupLocation(fromCoords)
+
+    const toCoords = routeTo ? getCityCoordinates(routeTo) : DEFAULT_LOCATION
+    setDropoffLocation(toCoords)
+
+    console.log("Route locations set:", { from: fromCoords, to: toCoords })
+  }, [routeFrom, routeTo])
+
   // Request directions when pickup and dropoff locations are set
   useEffect(() => {
     if (isMapLoaded && pickupLocation && dropoffLocation && !directionsRequested) {
-      setDirectionsRequested(true);
-      console.log("Requesting directions between:", pickupLocation, dropoffLocation);
+      setDirectionsRequested(true)
+      console.log("Requesting directions between:", pickupLocation, dropoffLocation)
     }
-  }, [isMapLoaded, pickupLocation, dropoffLocation, directionsRequested]);
-  
+  }, [isMapLoaded, pickupLocation, dropoffLocation, directionsRequested])
+
   // Handle map load
   const handleMapLoad = (map) => {
-    mapRef.current = map;
-    setIsMapLoaded(true);
-    
+    mapRef.current = map
+    setIsMapLoaded(true)
+
     if (onMapReady) {
-      console.log("🗺️ Google Maps instance created and ready");
-      onMapReady(map);
-      
+      console.log("🗺️ Google Maps instance created and ready")
+      onMapReady(map)
+
       // Force a resize to ensure the map renders correctly
       setTimeout(() => {
         if (map) {
-          map.panTo(driverLocation);
+          map.panTo(driverLocation)
         }
-      }, 100);
+      }, 100)
     }
-  };
-  
+  }
+
   // Handle directions response
   const directionsCallback = (response) => {
-    console.log("Directions API response:", response);
-    
-    if (response !== null && response.status === 'OK') {
-      setDirections(response);
-      
+    console.log("Directions API response:", response)
+
+    if (response !== null && response.status === "OK") {
+      setDirections(response)
+
       // Extract path points from the response for custom rendering if needed
-      const route = response.routes[0];
-      const points = [];
-      const legs = route.legs;
-      
+      const route = response.routes[0]
+      const points = []
+      const legs = route.legs
+
       for (let i = 0; i < legs.length; i++) {
-        const steps = legs[i].steps;
+        const steps = legs[i].steps
         for (let j = 0; j < steps.length; j++) {
-          const nextSegment = steps[j].path;
+          const nextSegment = steps[j].path
           for (let k = 0; k < nextSegment.length; k++) {
-            points.push(nextSegment[k]);
+            points.push(nextSegment[k])
           }
         }
       }
-      
-      setRoutePath(points);
-      
+
+      setRoutePath(points)
+
       // Calculate and log the total distance
-      const totalDistance = route.legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000;
-      console.log(`Total route distance: ${totalDistance.toFixed(2)} km`);
+      const totalDistance = route.legs.reduce((total, leg) => total + leg.distance.value, 0) / 1000
+      console.log(`Total route distance: ${totalDistance.toFixed(2)} km`)
     } else {
-      console.error("Error fetching directions:", response);
-      
+      console.error("Error fetching directions:", response)
+
       // Fallback to straight line if directions fail
       if (pickupLocation && dropoffLocation) {
-        setRoutePath([pickupLocation, dropoffLocation]);
+        setRoutePath([pickupLocation, dropoffLocation])
       }
     }
-  };
+  }
   // Create info window content for markers
   const createDriverInfoContent = () => (
     <div className="p-3">
       <h3 className="font-bold text-lg">{driverName || "Driver"}</h3>
-      <p className="text-sm"><strong>Cab:</strong> {cabNumber || "N/A"}</p>
+      <p className="text-sm">
+        <strong>Cab:</strong> {cabNumber || "N/A"}
+      </p>
       <p className="text-sm">
         <strong>Current Location:</strong> {driverLocation.lat.toFixed(6)}, {driverLocation.lng.toFixed(6)}
       </p>
-      <p className="text-sm"><strong>Last Updated:</strong> {lastUpdated.toLocaleTimeString()}</p>
+      <p className="text-sm">
+        <strong>Last Updated:</strong> {lastUpdated.toLocaleTimeString()}
+      </p>
       {routeFrom && routeTo && (
-        <p className="text-sm mt-1"><strong>Route:</strong> {routeFrom} → {routeTo}</p>
+        <p className="text-sm mt-1">
+          <strong>Route:</strong> {routeFrom} → {routeTo}
+        </p>
       )}
     </div>
-  );
-  
+  )
+
   // Add this function to calculate distance between points
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Radius of the earth in km
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
-    const d = R * c; // Distance in km
-    return d;
-  };
+    const R = 6371 // Radius of the earth in km
+    const dLat = ((lat2 - lat1) * Math.PI) / 180
+    const dLon = ((lon2 - lon1) * Math.PI) / 180
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+    const d = R * c // Distance in km
+    return d
+  }
+
+  // Create marker when map is loaded
+  useEffect(() => {
+    if (isMapLoaded && mapRef.current && !marker) {
+      const newMarker = new window.google.maps.Marker({
+        position: driverLocation,
+        map: mapRef.current,
+        icon: markerIcons.car,
+        label: { text: driverName || "Driver", color: "#ffffff", fontWeight: "bold" },
+        animation: window.google.maps.Animation.BOUNCE,
+      })
   
+      // Add click listener to marker
+      newMarker.addListener("click", () => {
+        setSelectedMarker("driver")
+      })
+  
+      setMarker(newMarker)
+    }
+  }, [isMapLoaded, driverLocation, driverName, marker]) // ✅ Added marker here
+  
+  // Cleanup marker when component unmounts
+  useEffect(() => {
+    return () => {
+      if (marker) {
+        marker.setMap(null)
+      }
+    }
+  }, [marker])
+
   return (
-    <div className="h-[500px] w-full rounded-lg overflow-hidden shadow-lg relative">
+    <div className="h-[500px] w-full rounded-lg overflow-hidden shadow-lg relative text-black">
       {/* Route information panel */}
       <div className="absolute top-2 left-2 z-10 bg-white bg-opacity-90 text-black text-xs p-2 rounded shadow-md">
         <div className="flex items-center gap-2 mb-1">
           <div className="w-3 h-3 rounded-full bg-green-500"></div>
           <div className="flex-1">
-            <p className="font-medium">{routeFrom || "Origin"}</p>
+            <p className="font-medium">{routeFrom || "Origin (Pune)"}</p>
           </div>
         </div>
         <div className="h-4 border-l-2 border-dashed border-gray-400 ml-1.5"></div>
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-red-500"></div>
           <div className="flex-1">
-            <p className="font-medium">{routeTo || "Destination"}</p>
+            <p className="font-medium">{routeTo || "Destination (Pune)"}</p>
           </div>
         </div>
       </div>
-      
+
       {/* Driver location indicator */}
       <div className="absolute top-2 right-2 z-10 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
         <div>Driver: {driverName || "Unknown"}</div>
-        <div>Location: {driverLocation.lat.toFixed(4)}, {driverLocation.lng.toFixed(4)}</div>
+        <div>
+          Location: {driverLocation.lat.toFixed(4)}, {driverLocation.lng.toFixed(4)}
+        </div>
         <div>Updated: {lastUpdated.toLocaleTimeString()}</div>
       </div>
-      
-      <LoadScript 
-        googleMapsApiKey={GOOGLE_MAPS_API_KEY} 
+
+      <LoadScript
+        googleMapsApiKey={GOOGLE_MAPS_API_KEY}
         loadingElement={
           <div className="h-full w-full flex items-center justify-center bg-gray-100">
             <div className="text-center">
@@ -318,44 +341,44 @@ const LeafletMap = ({
               {
                 featureType: "all",
                 elementType: "labels.text.fill",
-                stylers: [{ color: "#7c93a3" }, { lightness: "-10" }]
+                stylers: [{ color: "#7c93a3" }, { lightness: "-10" }],
               },
               {
                 featureType: "administrative.country",
                 elementType: "geometry",
-                stylers: [{ visibility: "on" }]
+                stylers: [{ visibility: "on" }],
               },
               {
                 featureType: "administrative.province",
                 elementType: "geometry.stroke",
-                stylers: [{ color: "#a5b1bf" }, { visibility: "on" }, { weight: "1.00" }]
+                stylers: [{ color: "#a5b1bf" }, { visibility: "on" }, { weight: "1.00" }],
               },
               {
                 featureType: "administrative.locality",
                 elementType: "labels.text.fill",
-                stylers: [{ color: "#3a4051" }]
+                stylers: [{ color: "#3a4051" }],
               },
               {
                 featureType: "landscape",
                 elementType: "geometry.fill",
-                stylers: [{ color: "#f1f5f9" }]
+                stylers: [{ color: "#f1f5f9" }],
               },
               {
                 featureType: "road",
                 elementType: "geometry.fill",
-                stylers: [{ color: "#ffffff" }]
+                stylers: [{ color: "#ffffff" }],
               },
               {
                 featureType: "road",
                 elementType: "geometry.stroke",
-                stylers: [{ color: "#cbd6e2" }]
+                stylers: [{ color: "#cbd6e2" }],
               },
               {
                 featureType: "water",
                 elementType: "geometry.fill",
-                stylers: [{ color: "#a3ccff" }]
-              }
-            ]
+                stylers: [{ color: "#a3ccff" }],
+              },
+            ],
           }}
           onLoad={handleMapLoad}
         >
@@ -371,7 +394,7 @@ const LeafletMap = ({
               callback={directionsCallback}
             />
           )}
-          
+
           {/* Render directions */}
           {directions && (
             <DirectionsRenderer
@@ -381,30 +404,21 @@ const LeafletMap = ({
                 polylineOptions: {
                   strokeColor: "#4285F4",
                   strokeOpacity: 0.8,
-                  strokeWeight: 5
-                }
+                  strokeWeight: 5,
+                },
               }}
             />
           )}
-          
+
           {/* Driver marker with car icon - this is the real-time position */}
-          {/* <Marker
+          <Marker
             position={driverLocation}
             icon={markerIcons.car}
             label={{ text: driverName || "Driver", color: "#ffffff", fontWeight: "bold" }}
             onClick={() => setSelectedMarker("driver")}
-            // animation={window.google?.maps.Animation.BOUNCE}
-          /> */}
+            animation={window.google?.maps.Animation.BOUNCE}
+          />
 
-<Marker
-  key={driverLocation.lat + driverLocation.lng}  // force re-mount on location change
-  position={driverLocation}
-  icon={markerIcons.car}
-  label={{ text: driverName || "Driver", color: "#ffffff", fontWeight: "bold" }}
-  onClick={() => setSelectedMarker("driver")}
-/>
-
-          
           {/* Pickup location marker */}
           {pickupLocation && (
             <Marker
@@ -414,7 +428,7 @@ const LeafletMap = ({
               onClick={() => setSelectedMarker("pickup")}
             />
           )}
-          
+
           {/* Dropoff location marker */}
           {dropoffLocation && (
             <Marker
@@ -424,22 +438,25 @@ const LeafletMap = ({
               onClick={() => setSelectedMarker("dropoff")}
             />
           )}
-          
+
           {/* Info windows */}
           {selectedMarker === "driver" && (
-            <InfoWindow
-              position={driverLocation}
-              onCloseClick={() => setSelectedMarker(null)}
-            >
+            <InfoWindow position={driverLocation} onCloseClick={() => setSelectedMarker(null)}>
               <div className="p-3">
                 <h3 className="font-bold text-lg">{driverName || "Driver"}</h3>
-                <p className="text-sm"><strong>Cab:</strong> {cabNumber || "N/A"}</p>
+                <p className="text-sm">
+                  <strong>Cab:</strong> {cabNumber || "N/A"}
+                </p>
                 <p className="text-sm">
                   <strong>Current Location:</strong> {driverLocation.lat.toFixed(6)}, {driverLocation.lng.toFixed(6)}
                 </p>
-                <p className="text-sm"><strong>Last Updated:</strong> {lastUpdated.toLocaleTimeString()}</p>
+                <p className="text-sm">
+                  <strong>Last Updated:</strong> {lastUpdated.toLocaleTimeString()}
+                </p>
                 {routeFrom && routeTo && (
-                  <p className="text-sm mt-1"><strong>Route:</strong> {routeFrom} → {routeTo}</p>
+                  <p className="text-sm mt-1">
+                    <strong>Route:</strong> {routeFrom} → {routeTo}
+                  </p>
                 )}
                 {directions && directions.routes && directions.routes[0] && (
                   <div className="mt-2 pt-2 border-t border-gray-200">
@@ -454,13 +471,10 @@ const LeafletMap = ({
               </div>
             </InfoWindow>
           )}
-          
+
           {/* Pickup info window */}
           {selectedMarker === "pickup" && pickupLocation && (
-            <InfoWindow
-              position={pickupLocation}
-              onCloseClick={() => setSelectedMarker(null)}
-            >
+            <InfoWindow position={pickupLocation} onCloseClick={() => setSelectedMarker(null)}>
               <div className="p-2">
                 <h3 className="font-bold">Starting Point</h3>
                 <p className="text-sm">{routeFrom || "Origin"}</p>
@@ -470,13 +484,10 @@ const LeafletMap = ({
               </div>
             </InfoWindow>
           )}
-          
+
           {/* Dropoff info window */}
           {selectedMarker === "dropoff" && dropoffLocation && (
-            <InfoWindow
-              position={dropoffLocation}
-              onCloseClick={() => setSelectedMarker(null)}
-            >
+            <InfoWindow position={dropoffLocation} onCloseClick={() => setSelectedMarker(null)}>
               <div className="p-2">
                 <h3 className="font-bold">Destination</h3>
                 <p className="text-sm">{routeTo || "Destination"}</p>
@@ -496,7 +507,7 @@ const LeafletMap = ({
         </GoogleMap>
       </LoadScript>
     </div>
-  );
-};
+  )
+}
 
-export default LeafletMap;
+export default LeafletMap
