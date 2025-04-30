@@ -2902,23 +2902,23 @@ const CabSearch = () => {
                 />
               </div>
 
-              <div className="p-4 bg-gray-100">
+              <div className="p-4 bg-gray-100 text-black">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm font-semibold text-gray-800">Driver: {selectedDriver.driver?.name || "N/A"}</p>
-                    <p className="text-sm font-semibold text-gray-800">Cab Number: {selectedDriver.cab?.cabNumber || "N/A"}</p>
-                    <p className="text-sm font-semibold text-gray-800">
+                    <p className="text-sm font-semibold  text-black">Driver: {selectedDriver.driver?.name || "N/A"}</p>
+                    <p className="text-sm font-semibold text-black">Cab Number: {selectedDriver.cab?.cabNumber || "N/A"}</p>
+                    <p className="text-sm font-semibold text-black">
                       Distance: {selectedDriver.tripDetails?.location?.totalDistance ||
                         (driverRoutes[selectedDriver.driver?.id]?.totalDistance) || "0"} KM
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-800">
+                    <p className="text-sm text-black">
                       <strong>Current Location:</strong>{" "}
                       {selectedDriver.driver?.location?.latitude?.toFixed(6) || "N/A"},{" "}
                       {selectedDriver.driver?.location?.longitude?.toFixed(6) || "N/A"}
                     </p>
-                    <p className="text-sm text-gray-800">
+                    <p className="text-sm text-black">
                       <strong>Last Updated:</strong>{" "}
                       {selectedDriver.driver?.location?.timestamp
                         ? new Date(selectedDriver.driver.location.timestamp).toLocaleTimeString()

@@ -231,15 +231,15 @@ const LeafletMap = ({ location, driverName, cabNumber, routeFrom, routeTo, onMap
   }
   // Create info window content for markers
   const createDriverInfoContent = () => (
-    <div className="p-3">
-      <h3 className="font-bold text-lg">{driverName || "Driver"}</h3>
-      <p className="text-sm">
+    <div className="p-3 ">
+      <h3 className="font-bold text-lg text-black">{driverName || "Driver"}</h3>
+      <p className="text-sm text-black">
         <strong>Cab:</strong> {cabNumber || "N/A"}
       </p>
-      <p className="text-sm">
+      <p className="text-sm text-black">
         <strong>Current Location:</strong> {driverLocation.lat.toFixed(6)}, {driverLocation.lng.toFixed(6)}
       </p>
-      <p className="text-sm">
+      <p className="text-sm text-black">
         <strong>Last Updated:</strong> {lastUpdated.toLocaleTimeString()}
       </p>
       {routeFrom && routeTo && (
@@ -442,15 +442,15 @@ const LeafletMap = ({ location, driverName, cabNumber, routeFrom, routeTo, onMap
           {/* Info windows */}
           {selectedMarker === "driver" && (
             <InfoWindow position={driverLocation} onCloseClick={() => setSelectedMarker(null)}>
-              <div className="p-3">
+              <div className="p-3 text-black">
                 <h3 className="font-bold text-lg">{driverName || "Driver"}</h3>
                 <p className="text-sm">
                   <strong>Cab:</strong> {cabNumber || "N/A"}
                 </p>
-                <p className="text-sm">
-                  <strong>Current Location:</strong> {driverLocation.lat.toFixed(6)}, {driverLocation.lng.toFixed(6)}
+                <p className="text-sm text-black">
+                  <strong >Current Location:</strong> {driverLocation.lat.toFixed(6)}, {driverLocation.lng.toFixed(6)}
                 </p>
-                <p className="text-sm">
+                <p className="text-sm text-black">
                   <strong>Last Updated:</strong> {lastUpdated.toLocaleTimeString()}
                 </p>
                 {routeFrom && routeTo && (
