@@ -2026,10 +2026,6 @@ const CabSearch = () => {
     setCurrentDistance(distanceFromOrigin.toFixed(2));
     setRemainingDistance(distanceToDestination.toFixed(2));
 
-    console.log("From:", route.from.lat, route.from.lng);
-    console.log("Current Location:", location.latitude, location.longitude);
-    console.log("To:", route.to.lat, route.to.lng);
-
     // Update the driver's route with the new distance information
     setDriverRoutes((prev) => ({
       ...prev,

@@ -294,23 +294,6 @@ const LeafletMap = ({ location, driverName, cabNumber, routeFrom, routeTo, onMap
 
   return (
     <div className="h-[500px] w-full rounded-lg overflow-hidden shadow-lg relative text-black">
-      {/* Route information panel */}
-      <div className="absolute top-2 left-2 z-10 bg-white bg-opacity-90 text-black text-xs p-2 rounded shadow-md">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-3 h-3 rounded-full bg-green-500"></div>
-          <div className="flex-1">
-            <p className="font-medium">{routeFrom || "Origin (Pune)"}</p>
-          </div>
-        </div>
-        <div className="h-4 border-l-2 border-dashed border-gray-400 ml-1.5"></div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-red-500"></div>
-          <div className="flex-1">
-            <p className="font-medium">{routeTo || "Destination (Pune)"}</p>
-          </div>
-        </div>
-      </div>
-
       {/* Driver location indicator */}
       <div className="absolute top-2 right-2 z-10 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
         <div>Driver: {driverName || "Unknown"}</div>
