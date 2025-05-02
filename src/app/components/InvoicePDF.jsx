@@ -479,8 +479,8 @@ const InvoicePDF = ({
           <View style={styles.leftInfo}>
             <Text style={{ fontWeight: "bold", color: "#007BFF" }}>WTL TOURISM PRIVATE LIMITED</Text>
             <Text>Floor No.: First Floor</Text>
-            <Text>Office No. 09, A-Building, S No.53/2A/1, City Vista, Fountain Road, Pune</Text>
-            <Text>State: Maharashtra - 27</Text>
+            <Text>Office No. 016, A-Building, S No.53/2A/1, City Vista, Fountain Road, Pune</Text>
+            <Text>State: Maharashtra, Pincode-411014</Text>
             <Text>Phone: 8237257618</Text>
             <Text>GSTIN: 27AADCW8531C1ZD</Text>
           </View>
@@ -538,9 +538,9 @@ const InvoicePDF = ({
         <View style={styles.footer}>
           <View style={styles.terms}>
             <Text style={{ fontWeight: "bold" }}>Terms & Conditions:</Text>
-            <Text>1. Minimum ₹500 will be charged if trip is canceled.</Text>
+            <Text>1. Minimum Rs.500 will be charged if trip is canceled.</Text>
             <Text>2. Invoice will be cancelled if not paid in 7 days.</Text>
-            <Text>3. Diesel above ₹90/ltr may incur extra charges.</Text>
+            <Text>3. Diesel above Rs.90/ltr may incur extra charges.</Text>
             <Text>4. Payment due within 15 days of invoice date.</Text>
             <Text>5. Late payments incur 2% monthly interest.</Text>
           </View>
