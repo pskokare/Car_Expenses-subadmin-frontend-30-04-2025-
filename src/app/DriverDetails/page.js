@@ -242,10 +242,8 @@ const Driver = () => {
       newErrors.email = "Please Enter valid Gmail (e.g., user@gmail.com)";
     }    if (!addDriverFormData.phone.trim()) newErrors.phone = "Phone is required"
     else if (!/^\d{10}$/.test(addDriverFormData.phone)) newErrors.phone = "Phone must be 10 digits"
-    if (!addDriverFormData.licenseNo.trim()) newErrors.licenseNo = "License No is required"
-    if (!/^[A-Za-z0-9]{16}$/.test(licenseCleaned)) {
-      newErrors.licenseNo = "License must be 16 characters (letters and numbers only, excluding dashes)";
-    }    if (!addDriverFormData.adharNo.trim()) newErrors.adharNo = "Aadhar No is required"
+    if (!addDriverFormData.licenseNo.trim()) newErrors.licenseNo = "License No is required";   
+    if (!addDriverFormData.adharNo.trim()) newErrors.adharNo = "Aadhar No is required"
     else if (!/^\d{12}$/.test(addDriverFormData.adharNo)) newErrors.adharNo = "Aadhar must be 12 digits"
     if (!addDriverFormData.addedBy) newErrors.addedBy = "Admin ID is missing"
     if (!profileImage) newErrors.profileImage = "Profile image is required"
@@ -648,7 +646,7 @@ const Driver = () => {
                     { name: "name", icon: FiUser, placeholder: "Name" },
                     { name: "email", icon: FiMail, placeholder: "Email", type: "email" },
                     { name: "phone", icon: FiPhone, placeholder: "+91" },
-                    { name: "licenseNo", icon: FiCreditCard, placeholder: "License No (16 characters)" },
+                    { name: "licenseNo", icon: FiCreditCard, placeholder: "License No" },
                     { name: "adharNo", icon: FiFileText, placeholder: "Aadhar No (12 digits)" },
                   ].map((field) => (
                     <div key={field.name} className="relative">

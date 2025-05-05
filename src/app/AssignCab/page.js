@@ -149,13 +149,15 @@ export default function AssignCab() {
   const validateCabForm = () => {
     const newErrors = {}
   
-    if (!cabFormData.cabNumber.trim()) {
-      newErrors.cabNumber = "Cab Number is required"
-    } else if (
-      !/^([A-Z]{2}-\d{4}|[A-Z]{2}\d{4}|[A-Z]{2}\d{2}-[A-Z]{2}-\d{4}|\d{3}-[A-Z]{3})$/.test(cabFormData.cabNumber)
-    ) {
-      newErrors.cabNumber ="Invalid Cab Number"
+
+
+    const cabNumberTrimmed = cabFormData.cabNumber.replace(/\s/g, '');
+    if (!cabNumberTrimmed) {
+      newErrors.cabNumber = "Cab Number is required";
+    } else if (cabNumberTrimmed.length < 6 || cabNumberTrimmed.length > 12) {
+      newErrors.cabNumber = "Invalid Cab Number";
     }
+    
   
     if (!cabFormData.insuranceNumber.trim()) newErrors.insuranceNumber = "Insurance Number is required"
     if (!cabFormData.insuranceExpiry.trim()) newErrors.insuranceExpiry = "Insurance Expiry is required"
