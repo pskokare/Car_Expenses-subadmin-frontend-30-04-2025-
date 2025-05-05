@@ -1,38 +1,44 @@
+
 "use client";
 import { useState, useEffect } from "react";
 import Sidebar from "../slidebar/page";
 import axios from "axios";
 import { motion } from "framer-motion";
 import baseURL from "@/utils/api";
-import { useRouter } from "next/navigation"
+import { useRouter } from "next/navigation";
 
 const AccessDeniedModal = () => {
-  const router = useRouter()
+  const router = useRouter();
 
   const handleClose = () => {
-    router.push("/")
-  }
+    router.push("/");
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
       <div className="bg-white text-black p-8 rounded-lg shadow-lg max-w-sm w-full">
         <h2 className="text-xl font-semibold mb-4">Access Denied</h2>
-        <p className="mb-6">Your access has been restricted. Please contact the administrator.</p>
-        <button onClick={handleClose} className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition">
+        <p className="mb-6">
+          Your access has been restricted. Please contact the administrator.
+        </p>
+        <button
+          onClick={handleClose}
+          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+        >
           Close
         </button>
       </div>
     </div>
-  )
-}
-export default function CabService() {
-  const router = useRouter()
-  // Add this state
-  const [showAccessDenied, setShowAccessDenied] = useState(false)
+  );
+};
 
+export default function CabService() {
+  const router = useRouter();
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
   const [drivers, setDrivers] = useState([]);
-  const [cabs, setCabs] = useState([]);
+  const [assignments, setAssignments] = useState([]);
   const [services, setServices] = useState([]);
+  const [mergedServices, setMergedServices] = useState([]);
   const [selectedDriver, setSelectedDriver] = useState("");
   const [selectedCab, setSelectedCab] = useState("");
   const [receiptImage, setReceiptImage] = useState("");
@@ -45,36 +51,58 @@ export default function CabService() {
   useEffect(() => {
     const checkUserStatus = async () => {
       try {
-        const id = localStorage.getItem("id")
+        const id = localStorage.getItem("id");
         if (!id) {
-          router.push("/")
-          return
+          router.push("/");
+          return;
         }
 
-        const subAdminsRes = await axios.get(`${baseURL}api/admin/getAllSubAdmins`)
-        const loggedInUser = subAdminsRes.data.subAdmins.find((e) => e._id === id)
+        const subAdminsRes = await axios.get(
+          `${baseURL}api/admin/getAllSubAdmins`
+        );
+        const loggedInUser = subAdminsRes.data.subAdmins.find(
+          (e) => e._id === id
+        );
 
         if (loggedInUser?.status === "Inactive") {
-          localStorage.clear()
-          setShowAccessDenied(true)
-          return
+          localStorage.clear();
+          setShowAccessDenied(true);
+          return;
         }
       } catch (err) {
-        console.error("Error checking user status:", err)
+        console.error("Error checking user status:", err);
       }
-    }
+    };
 
-    checkUserStatus()
-  }, [router])
-
+    checkUserStatus();
+  }, [router]);
 
   useEffect(() => {
     fetchInitialData();
   }, []);
 
+  useEffect(() => {
+    // Merge services with assignments whenever either changes
+    if (services.length > 0 && assignments.length > 0) {
+      const merged = services.map(service => {
+        // Find the assignment that matches this service
+        const assignment = assignments.find(
+          assign => assign.cab?._id === service.cab?._id
+        );
+
+        return {
+          ...service,
+          cab: assignment?.cab || service.cab,
+          driver: assignment?.driver || service.driver
+        };
+      });
+      setMergedServices(merged);
+    }
+  }, [services, assignments]);
+
   const fetchInitialData = async () => {
     try {
-      const [driversRes, cabsRes, servicesRes] = await Promise.all([
+      const [driversRes, assignmentsRes, servicesRes] = await Promise.all([
         axios.get(`${baseURL}api/driver/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         }),
@@ -87,25 +115,16 @@ export default function CabService() {
       ]);
 
       setDrivers(driversRes.data);
-      setCabs(cabsRes.data);
-
-      // 🔁 Merge each service with corresponding cab data
-      const mergedServices = servicesRes.data.services.map((srv) => {
-        const matchingCab = cabsRes.data.find((cab) => cab._id === srv.cab?._id);
-        return {
-          ...srv,
-          vehicleServicing: matchingCab?.vehicleServicing || {},
-        };
-      });
-
-      setServices(mergedServices);
+      setAssignments(assignmentsRes.data);
+      setServices(servicesRes.data.services || []);
     } catch (error) {
       console.error("Error fetching:", error);
     }
   };
 
   const handleAssignServicing = async () => {
-    if (!selectedCab || !selectedDriver) return alert("Select both cab and driver.");
+    if (!selectedCab || !selectedDriver)
+      return alert("Select both cab and driver.");
 
     try {
       await axios.post(
@@ -124,13 +143,38 @@ export default function CabService() {
     }
   };
 
-  const calculateKmTravelled = (meterReadings) => {
-    if (!Array.isArray(meterReadings) || meterReadings.length === 0) return 0;
-
-    const totalKm = meterReadings.reduce((sum, value) => sum + (Number(value) || 0), 0);
-    return totalKm;
+  const calculateKmTravelled = (assignment) => {
+    if (!assignment?.tripDetails?.vehicleServicing?.meter) return 0;
+    const meterReadings = assignment.tripDetails.vehicleServicing.meter;
+    if (!Array.isArray(meterReadings)) return 0;
+    return meterReadings.reduce((sum, value) => sum + (Number(value) || 0), 0);
   };
 
+  // Extract unique cabs from assignments for dropdown
+  const getAvailableCabs = () => {
+    const uniqueCabs = [];
+    const cabIds = new Set();
+  
+    // First get all cabs that are eligible for servicing (kmTravelled > 10000)
+    assignments.forEach((assignment) => {
+      if (assignment.cab && !cabIds.has(assignment.cab._id)) {
+        cabIds.add(assignment.cab._id);
+        const kmTravelled = calculateKmTravelled(assignment);
+        if (kmTravelled > 10000) {
+          uniqueCabs.push({
+            ...assignment.cab,
+            kmTravelled,
+          });
+        }
+      }
+    });
+  
+    // Now filter out cabs that already have a servicing assignment
+    return uniqueCabs.filter(cab => {
+      // Check if this cab is not in the services array
+      return !services.some(service => service.cab?._id === cab._id);
+    });
+  };
 
   return (
     <div className="flex bg-gray-900 min-h-screen text-white">
@@ -150,15 +194,19 @@ export default function CabService() {
 
         {/* ✅ Table */}
         <div className="bg-gray-800 rounded-lg shadow p-4 space-y-4">
-          {/* Header - Visible on mobile */}
-          <div className="md:hidden grid grid-cols-2 gap-2 text-sm text-gray-400 font-medium">
-            <div># & Cab No</div>
-            <div>Driver & Status</div>
+          {/* Desktop Table Header */}
+          <div className="hidden md:grid grid-cols-6 gap-4 text-gray-400 font-medium mb-2">
+            <div className="text-center">#</div>
+            <div className="text-center">Cab Number</div>
+            <div className="text-center">Driver</div>
+            <div className="text-center">Status</div>
+            <div className="text-center">Amount</div>
+            <div className="text-center">Receipt</div>
           </div>
 
-          {services.map((srv, i) => (
+          {mergedServices.map((service, i) => (
             <div
-              key={srv._id}
+              key={service._id}
               className="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors duration-200"
             >
               {/* Mobile View (2 columns) */}
@@ -170,73 +218,73 @@ export default function CabService() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-400">Cab No</span>
-                    <span>{srv?.cab?.cabNumber || "-"}</span>
+                    <span>{service.cab?.cabNumber || "N/A"}</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-gray-400">Driver</span>
-                    <span>{srv?.driver?.name || "-"}</span>
+                    <span>{service.driver?.name || "N/A"}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-gray-400">Status</span>
-                    <span className="capitalize">{srv.status}</span>
+                    <span className="capitalize">{service.status || "N/A"}</span>
                   </div>
                 </div>
-              </div>
 
-              {/* Amount and Receipt - Full width on mobile */}
-              <div className="mt-3 md:mt-0">
-                <div className="flex justify-between items-center border-t border-gray-600 pt-3 md:hidden">
-                  <span className="text-gray-400">Amount</span>
-                  <span>
-                    {srv.servicingAmount ? `₹${srv.servicingAmount}` : "-"}
-                  </span>
-                </div>
+                {/* Amount and Receipt - Full width on mobile */}
+                <div className="col-span-2 mt-3">
+                  <div className="flex justify-between items-center border-t border-gray-600 pt-3">
+                    <span className="text-gray-400">Amount</span>
+                    <span>
+                      {service.servicingAmount ? `₹${service.servicingAmount}` : "N/A"}
+                    </span>
+                  </div>
 
-                <div className="flex justify-between items-center border-t border-gray-600 pt-3 md:hidden">
-                  <span className="text-gray-400">Receipt</span>
-                  <span>
-                    {srv.receiptImage ? (
-                      <button
-                        onClick={() => {
-                          setReceiptImage(srv.receiptImage);
-                          setShowReceiptModal(true);
-                        }}
-                        className="text-blue-400 underline hover:text-blue-300 mr-2"
-                      >
-                        View Receipt
-                      </button>
-                    ) : (
-                      "-"
-                    )}
-                  </span>
+                  <div className="flex justify-between items-center border-t border-gray-600 pt-3">
+                    <span className="text-gray-400">Receipt</span>
+                    <span>
+                      {service.receiptImage ? (
+                        <button
+                          onClick={() => {
+                            setReceiptImage(service.receiptImage);
+                            setShowReceiptModal(true);
+                          }}
+                          className="bg-blue-100 text-blue-800 border border-blue-700 px-3 py-1 rounded-md hover:bg-blue-200 transition duration-150"
+                          >
+                          View Receipt
+                        </button>
+                      ) : (
+                        "N/A"
+                      )}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Desktop View (hidden on mobile) */}
               <div className="hidden md:grid grid-cols-6 gap-4">
                 <div className="text-center">{i + 1}</div>
-                <div className="text-center">{srv?.cab?.cabNumber || "-"}</div>
-                <div className="text-center">{srv?.driver?.name || "-"}</div>
-                <div className="text-center capitalize">{srv.status}</div>
+                <div className="text-center">{service.cab?.cabNumber || "N/A"}</div>
+                <div className="text-center">{service.driver?.name || "N/A"}</div>
+                <div className="text-center capitalize">{service.status || "N/A"}</div>
                 <div className="text-center">
-                  {srv.servicingAmount ? `₹${srv.servicingAmount}` : "-"}
+                  {service.servicingAmount ? `₹${service.servicingAmount}` : "N/A"}
                 </div>
                 <div className="text-center">
-                  {srv.receiptImage ? (
+                  {service.receiptImage ? (
                     <button
                       onClick={() => {
-                        setReceiptImage(srv.receiptImage);
+                        setReceiptImage(service.receiptImage);
                         setShowReceiptModal(true);
                       }}
-                      className="text-blue-400 underline hover:text-blue-300 mr-2"
-                    >
+                      className="bg-blue-100 text-blue-800 border border-blue-700 px-3 py-1 rounded-md hover:bg-blue-200 transition duration-150"
+                      >
                       View Receipt
                     </button>
                   ) : (
-                    "-"
+                    "N/A"
                   )}
                 </div>
               </div>
@@ -244,7 +292,7 @@ export default function CabService() {
           ))}
         </div>
 
-        {/* ✅ Assign Modal */}
+        {/* Assign Modal */}
         {showAssignModal && (
           <div className="fixed inset-0 bg-gradient-to-b bg-black/50 to-transparent backdrop-blur-md flex justify-center items-center z-50 p-4">
             <motion.div
@@ -275,19 +323,11 @@ export default function CabService() {
                 onChange={(e) => setSelectedCab(e.target.value)}
               >
                 <option value="">-- Select Cab --</option>
-                {cabs
-                  .filter((cab) => {
-                    const kmTravelled = calculateKmTravelled(cab.tripDetails?.vehicleServicing?.meter || []);
-                    return kmTravelled > 10000;
-                  })
-                  .map((cab) => {
-                    const kmTravelled = calculateKmTravelled(cab.tripDetails?.vehicleServicing?.meter || []);
-                    return (
-                      <option key={cab._id} value={cab._id}>
-                        {cab.cabNumber} ({kmTravelled} km)
-                      </option>
-                    );
-                  })}
+                {getAvailableCabs().map((cab) => (
+                  <option key={cab._id} value={cab._id}>
+                    {cab.cabNumber}
+                  </option>
+                ))}
               </select>
 
               <div className="flex justify-between gap-3">
@@ -308,11 +348,10 @@ export default function CabService() {
           </div>
         )}
 
-        {/* ✅ Receipt Modal */}
+        {/* Receipt Modal */}
         {showReceiptModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg shadow-lg p-4 w-[90%] md:w-[600px] h-[80%] max-h-[90%] overflow-auto relative">
-
               <h3 className="text-xl font-semibold mb-4">Receipt Image</h3>
               <img
                 src={receiptImage}
@@ -334,7 +373,3 @@ export default function CabService() {
     </div>
   );
 }
-
-
-
-

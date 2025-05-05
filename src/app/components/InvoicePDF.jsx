@@ -503,27 +503,27 @@ const InvoicePDF = ({
         </View>
         <View style={styles.tableRow}>
           <Text style={styles.tableCell}>FastTag</Text>
-          <Text style={styles.tableAmount}>₹{formatIndianNumber(fastTagAmount)}</Text>
+          <Text style={styles.tableAmount}>{formatIndianNumber(fastTagAmount)}</Text>
         </View>
         <View style={styles.tableRow}>
           <Text style={styles.tableCell}>Tyre Puncture</Text>
-          <Text style={styles.tableAmount}>₹{formatIndianNumber(tyreAmount)}</Text>
+          <Text style={styles.tableAmount}>{formatIndianNumber(tyreAmount)}</Text>
         </View>
         <View style={styles.tableRow}>
           <Text style={styles.tableCell}>Other Problems</Text>
-          <Text style={styles.tableAmount}>₹{formatIndianNumber(otherAmount)}</Text>
+          <Text style={styles.tableAmount}>{formatIndianNumber(otherAmount)}</Text>
         </View>
 
         <View style={styles.rowDivider} />
 
         <View style={styles.tableRow}>
           <Text style={[styles.tableCell, { fontWeight: "bold" }]}>Subtotal</Text>
-          <Text style={styles.tableAmount}>₹{formatIndianNumber(subtotal)}</Text>
+          <Text style={styles.tableAmount}>{formatIndianNumber(subtotal)}</Text>
         </View>
 
         <View style={styles.tableRow}>
           <Text style={[styles.tableCell, { fontWeight: "bold" }]}>GST (5%)</Text>
-          <Text style={styles.tableAmount}>₹{formatIndianNumber(gst)}</Text>
+          <Text style={styles.tableAmount}>{formatIndianNumber(gst)}</Text>
         </View>
 
         <View style={styles.rowDivider} />
@@ -532,7 +532,7 @@ const InvoicePDF = ({
           <Text style={styles.totalWords}>
             <Text style={{ fontWeight: "bold", fontStyle: "italic" }}>{numberToWords(totalAmount)}</Text>
           </Text>
-          <Text style={styles.totalNumber}>₹{formatIndianNumber(totalAmount)}</Text>
+          <Text style={styles.totalNumber}>{formatIndianNumber(totalAmount)}</Text>
         </View>
 
         <View style={styles.footer}>

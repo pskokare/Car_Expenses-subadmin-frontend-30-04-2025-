@@ -233,16 +233,19 @@ const Driver = () => {
     if (file) setAdharImageName(file.name);
   };
 
+  const licenseCleaned = addDriverFormData.licenseNo.replace(/-/g, "");
   const validateAddDriverForm = () => {
     const newErrors = {}
     if (!addDriverFormData.name.trim()) newErrors.name = "Name is required"
     if (!addDriverFormData.email.trim()) newErrors.email = "Email is required"
-    else if (!/\S+@\S+\.\S+/.test(addDriverFormData.email)) newErrors.email = "Invalid email format"
-    if (!addDriverFormData.phone.trim()) newErrors.phone = "Phone is required"
+    else if (!/^[a-zA-Z0-9._%+-]+@gmail\.com$/.test(addDriverFormData.email)) {
+      newErrors.email = "Please Enter valid Gmail (e.g., user@gmail.com)";
+    }    if (!addDriverFormData.phone.trim()) newErrors.phone = "Phone is required"
     else if (!/^\d{10}$/.test(addDriverFormData.phone)) newErrors.phone = "Phone must be 10 digits"
     if (!addDriverFormData.licenseNo.trim()) newErrors.licenseNo = "License No is required"
-    else if (!/^[A-Za-z0-9]{16}$/.test(addDriverFormData.licenseNo)) newErrors.licenseNo = "License must be 16 characters (letters and numbers)"
-    if (!addDriverFormData.adharNo.trim()) newErrors.adharNo = "Aadhar No is required"
+    if (!/^[A-Za-z0-9]{16}$/.test(licenseCleaned)) {
+      newErrors.licenseNo = "License must be 16 characters (letters and numbers only, excluding dashes)";
+    }    if (!addDriverFormData.adharNo.trim()) newErrors.adharNo = "Aadhar No is required"
     else if (!/^\d{12}$/.test(addDriverFormData.adharNo)) newErrors.adharNo = "Aadhar must be 12 digits"
     if (!addDriverFormData.addedBy) newErrors.addedBy = "Admin ID is missing"
     if (!profileImage) newErrors.profileImage = "Profile image is required"

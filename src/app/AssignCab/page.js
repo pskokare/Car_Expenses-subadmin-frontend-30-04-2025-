@@ -9,7 +9,7 @@ import { FaCar, FaClipboardList, FaCalendarAlt, FaUpload, FaPlus } from "react-i
 import baseURL from "@/utils/api"
 import { useRouter } from "next/navigation"
 
- 
+
 
 const AccessDeniedModal = () => {
   const router = useRouter()
@@ -146,30 +146,39 @@ export default function AssignCab() {
     }
     setCabFormErrors({ ...cabFormErrors, [e.target.name]: "" })
   }
-
   const validateCabForm = () => {
     const newErrors = {}
-    if (!cabFormData.cabNumber.trim()) newErrors.cabNumber = "Cab Number is required"
+  
+    if (!cabFormData.cabNumber.trim()) {
+      newErrors.cabNumber = "Cab Number is required"
+    } else if (
+      !/^([A-Z]{2}-\d{4}|[A-Z]{2}\d{4}|[A-Z]{2}\d{2}-[A-Z]{2}-\d{4}|\d{3}-[A-Z]{3})$/.test(cabFormData.cabNumber)
+    ) {
+      newErrors.cabNumber ="Invalid Cab Number"
+    }
+  
     if (!cabFormData.insuranceNumber.trim()) newErrors.insuranceNumber = "Insurance Number is required"
     if (!cabFormData.insuranceExpiry.trim()) newErrors.insuranceExpiry = "Insurance Expiry is required"
     if (!cabFormData.registrationNumber.trim()) newErrors.registrationNumber = "Registration Number is required"
     if (!cabFormData.cabImage) newErrors.cabImage = "Cab image is required"
-
+  
     setCabFormErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
+  
+
 
   const handleAddCabSubmit = async (e) => {
     e.preventDefault()
     if (!validateCabForm()) return
-  
+
     setLoading(true)
     setCabFormSuccess("")
-  
+
     try {
       const token = localStorage.getItem("token")
       const formDataToSend = new FormData()
-  
+
       Object.keys(cabFormData).forEach((key) => {
         if (typeof cabFormData[key] === "object" && !(cabFormData[key] instanceof File)) {
           formDataToSend.append(key, JSON.stringify(cabFormData[key])) // Convert nested objects to JSON
@@ -177,15 +186,15 @@ export default function AssignCab() {
           formDataToSend.append(key, cabFormData[key]) // Append normal values
         }
       })
-  
+
       const response = await fetch(`${baseURL}api/cabDetails/add`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` }, // Do NOT set 'Content-Type' manually
         body: formDataToSend,
       })
-  
+
       const data = await response.json()
-  
+
       if (response.ok) {
         setCabFormSuccess("Cab added successfully!")
         setCabFormData({
@@ -208,7 +217,10 @@ export default function AssignCab() {
       setLoading(false)
     }
   }
-    
+
+
+
+
   useEffect(() => {
     const checkUserStatus = async () => {
       try {
@@ -234,7 +246,7 @@ export default function AssignCab() {
     checkUserStatus()
   }, [router])
 
-  
+
   return (
     <motion.div
       className="flex min-h-screen bg-gray-900 text-white"
@@ -320,10 +332,10 @@ export default function AssignCab() {
               {message && (
                 <motion.p
                   className={`mt-4 text-center font-medium text-sm md:text-base ${message.startsWith("✅")
-                      ? "text-green-400"
-                      : message.startsWith("⚠️")
-                        ? "text-yellow-400"
-                        : "text-red-400"
+                    ? "text-green-400"
+                    : message.startsWith("⚠️")
+                      ? "text-yellow-400"
+                      : "text-red-400"
                     }`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
@@ -337,7 +349,7 @@ export default function AssignCab() {
       </div>
 
       {/* Add Cab Modal */}
-      {showAddCabForm && (
+      {/* {showAddCabForm && (
         <div className="fixed inset-0 bg-gradient-to-b bg-black/50 to-transparent backdrop-blur-md  flex items-center justify-center z-50 p-4">
           <motion.div
             className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md"
@@ -411,7 +423,93 @@ export default function AssignCab() {
             </form>
           </motion.div>
         </div>
+      )} */}
+
+{showAddCabForm && (
+  <div className="fixed inset-0 bg-gradient-to-b bg-black/50 to-transparent backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <motion.div
+      className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md"
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      exit={{ scale: 0.9, opacity: 0 }}
+    >
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-xl font-bold text-white">Add New Cab</h3>
+        <button
+          onClick={() => {
+            setShowAddCabForm(false)
+            setCabFormErrors({})
+            setCabFormSuccess("")
+          }}
+          className="text-gray-400 hover:text-white"
+        >
+          ✕
+        </button>
+      </div>
+
+      {cabFormSuccess && (
+        <p className="text-green-500 text-center mb-4">{cabFormSuccess}</p>
       )}
+
+      <form onSubmit={handleAddCabSubmit} encType="multipart/form-data">
+        {[
+          { name: "cabNumber", icon: <FaCar />, placeholder: "Cab Number" },
+          { name: "insuranceNumber", icon: <FaClipboardList />, placeholder: "Insurance Number" },
+          {
+            name: "insuranceExpiry",
+            icon: <FaCalendarAlt />,
+            placeholder: "Insurance Expiry Date",
+            type: "date",
+          },
+          { name: "registrationNumber", icon: <FaClipboardList />, placeholder: "Registration Number" },
+        ].map(({ name, icon, placeholder, type = "text" }, index) => (
+          <div key={index} className="relative mt-4">
+            <div className="absolute left-3 top-3 text-white">{icon}</div>
+            <input
+              type={type}
+              name={name}
+              placeholder={placeholder}
+              min={name === "insuranceExpiry" ? new Date().toISOString().split("T")[0] : undefined}
+              className="w-full bg-gray-700 text-white pl-10 p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+              onChange={handleCabFormChange}
+              value={cabFormData[name]}
+            />
+            {cabFormErrors[name] && (
+              <p className="text-red-500 text-sm mt-1">{cabFormErrors[name]}</p>
+            )}
+          </div>
+        ))}
+
+        <div className="relative mt-4">
+          <FaUpload className="absolute left-3 top-3 text-white" />
+          <input
+            type="file"
+            name="cabImage"
+            accept="image/*"
+            className="w-full bg-gray-700 text-white p-3 pl-10 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
+            onChange={handleCabFormChange}
+          />
+          {cabFormErrors.cabImage && (
+            <p className="text-red-500 text-sm mt-1">{cabFormErrors.cabImage}</p>
+          )}
+        </div>
+
+        {cabFormErrors.apiError && (
+          <p className="text-red-500 text-sm mt-4">{cabFormErrors.apiError}</p>
+        )}
+
+        <button
+          type="submit"
+          className="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg mt-4 font-medium"
+          disabled={loading}
+        >
+          {loading ? "Adding..." : "Add Cab"}
+        </button>
+      </form>
+    </motion.div>
+  </div>
+)}
+
     </motion.div>
   )
 }
