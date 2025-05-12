@@ -81,7 +81,7 @@ const Sidebar = () => {
     { icon: <MdOutlineAssignmentTurnedIn />, label: 'Assign Cab', link: '/AssignCab' },
     { icon: <FiTruck />, label: 'View Cab', link: '/CabInfo' },
     { icon: <FiSettings />, label: 'Servicing', link: '/Servicing' },
-    { icon: <RiMoneyRupeeCircleLine />, label: 'Expenses', link: '/Expensive' },
+    { icon: <RiMoneyRupeeCircleLine />, label: 'RootBudget', link: '/Expensive' },
 
     // { icon: <MdOutlineAssignmentTurnedIn />, label: 'Add Cab', link: '/AddCab' },
     // { icon: <MdOutlineAssignmentTurnedIn />, label: 'Add Driver', link: '/AddDriver' },
