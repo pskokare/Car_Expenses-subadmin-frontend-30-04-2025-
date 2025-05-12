@@ -414,7 +414,7 @@ const CabSearch = () => {
     const connectWebSocket = () => {
       if (wsRef.current) return;
   
-      const wsUrl = "wss://api.Root Budget.com/";
+      const wsUrl = "wss://api.RootBudget.com/";
       wsRef.current = new WebSocket(wsUrl);
   
       wsRef.current.onopen = () => {
