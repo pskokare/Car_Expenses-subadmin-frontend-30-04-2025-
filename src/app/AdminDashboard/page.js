@@ -221,7 +221,7 @@ const AdminDashboard = () => {
                   suffix: "",
                 },
                 {
-                  label: "Total Expenses",
+                  label: "Total RootBudget",
                   value: stats.totalExpenses,
                   icon: <MdOutlineAccountBalanceWallet size={28} />,
                   prefix: "₹",
@@ -255,7 +255,7 @@ const AdminDashboard = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <h2 className="text-lg font-semibold mb-4 text-gray-200">Monthly Expenses per Cab</h2>
+                <h2 className="text-lg font-semibold mb-4 text-gray-200">Monthly RootBudget per Cab</h2>
                 <ResponsiveContainer width="100%" height={250}>
                   <BarChart data={expenseData}>
                     <XAxis dataKey="month" stroke="#E5E7EB" />
@@ -273,7 +273,7 @@ const AdminDashboard = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5 }}
               >
-                <h2 className="text-lg font-semibold mb-4 text-gray-200">Expense Breakdown</h2>
+                <h2 className="text-lg font-semibold mb-4 text-gray-200">RootBudget Breakdown</h2>
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
                     <Pie
