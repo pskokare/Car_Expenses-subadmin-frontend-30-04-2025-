@@ -191,7 +191,7 @@ const CabExpenses = () => {
       <div className="flex-1 md:ml-60 p-4 md:p-6 text-white mt-20 sm:mt-0 transition-all duration-300">
         {showAccessDenied && <AccessDeniedModal />}
 
-        <h1 className="text-xl md:text-2xl font-bold mb-4">RootBudget</h1>
+        <h1 className="text-xl md:text-2xl font-bold mb-4">Expenses</h1>
 
         <div className="space-y-4 mb-6">
           <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-2">
