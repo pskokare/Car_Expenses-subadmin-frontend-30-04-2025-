@@ -39,6 +39,7 @@ const CabSearch = () => {
   const [cabNumber, setCabNumber] = useState("")
   const [cabDetails, setCabDetails] = useState([])
   const [filteredCabs, setFilteredCabs] = useState([])
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all', 'assigned', 'completed'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [fromDate, setFromDate] = useState("")
@@ -67,6 +68,34 @@ const CabSearch = () => {
   // Add state for image modal
   const [imageModalOpen, setImageModalOpen] = useState(false)
   const [selectedImage, setSelectedImage] = useState("")
+  const getFilteredCabs = useCallback(() => {
+    let filtered = cabDetails;
+
+    // Apply status filter
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(item => item.status === statusFilter);
+    }
+
+    // Apply search filter if cabNumber is provided
+    if (cabNumber) {
+      filtered = filtered.filter(item =>
+        item.cab?.cabNumber?.toLowerCase().includes(cabNumber.toLowerCase())
+      );
+    }
+
+    // Apply date filter if dates are provided
+    if (fromDate || toDate) {
+      const startDate = fromDate || '1970-01-01';
+      const endDate = toDate || '2100-01-01';
+
+      filtered = filtered.filter(item => {
+        const assignedDate = new Date(item.assignedAt).toISOString().split('T')[0];
+        return assignedDate >= startDate && assignedDate <= endDate;
+      });
+    }
+
+    return filtered;
+  }, [cabDetails, statusFilter, cabNumber, fromDate, toDate]);
 
   // Track location update interval
   const locationIntervalRef = useRef(null)
@@ -83,11 +112,15 @@ const CabSearch = () => {
   }, []);
 
   useEffect(() => {
+    setFilteredCabs(getFilteredCabs());
+  }, [getFilteredCabs]);
+
+  useEffect(() => {
     if (selectedDriver) {
       console.log("Updated selectedDriver:", selectedDriver);
     }
   }, [selectedDriver]);
-  
+
 
   // Define cleanupMap callback before it's used
   const cleanupMap = useCallback(() => {
@@ -410,13 +443,13 @@ const CabSearch = () => {
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-  
+
     const connectWebSocket = () => {
       if (wsRef.current) return;
-  
+
       const wsUrl = "wss://api.expengo.com/";
       wsRef.current = new WebSocket(wsUrl);
-  
+
       wsRef.current.onopen = () => {
         setWsConnected(true);
         wsRef.current.send(JSON.stringify({
@@ -425,19 +458,19 @@ const CabSearch = () => {
           driverId: adminId.current,
         }));
       };
-  
+
       wsRef.current.onmessage = (event) => {
         try {
           const data = JSON.parse(event.data);
-      
+
           if (data.type === "location_update") {
             console.log("Received location update:", data);
-      
+
             driverLocations[data.driverId] = data.location;
-      
+
             setSelectedDriver(prev => {
               if (!prev || !prev.driver) return prev;
-      
+
               if (prev.driver._id === data.driverId) {
                 return {
                   ...prev,
@@ -458,15 +491,15 @@ const CabSearch = () => {
           console.error("Error parsing WebSocket message", err);
         }
       };
-      
-  
+
+
       wsRef.current.onerror = (error) => {
         console.error("WebSocket error:", error);
         setWsConnected(false);
         wsRef.current = null;
         setTimeout(connectWebSocket, 5000);
       };
-  
+
       wsRef.current.onclose = () => {
         console.log("WebSocket closed, reconnecting...");
         setWsConnected(false);
@@ -474,15 +507,15 @@ const CabSearch = () => {
         setTimeout(connectWebSocket, 5000);
       };
     };
-  
+
     connectWebSocket();
-  
+
     return () => {
       if (wsRef.current) wsRef.current.close();
     };
-  
+
   }, []); // ❗ No [selectedDriver] here
-  
+
   useEffect(() => {
     if (showMap && selectedDriver && mapLoaded) {
       initializeMap();
@@ -703,8 +736,8 @@ const CabSearch = () => {
     // Get the latest location from WebSocket if available
     const latestLocation = driverLocations[item.driver?._id] || item.driver.location;
 
-    console.log("driver location",item)
-    
+    console.log("driver location", item)
+
     // Set the selected driver with all necessary information
     setSelectedDriver({
       driver: {
@@ -726,7 +759,7 @@ const CabSearch = () => {
         // Ensure route information is properly formatted
         location: {
           from: item.tripDetails?.location?.from,
-          to: item.tripDetails?.location?.to ,
+          to: item.tripDetails?.location?.to,
           totalDistance: item.tripDetails?.location?.totalDistance ||
             calculateRouteDistance(item.tripDetails?.location?.from, item.tripDetails?.location?.to)
         }
@@ -1020,12 +1053,12 @@ const CabSearch = () => {
         return (
           <>
             <div className="mb-4">
-              <p>
+              {/* <p>
                 <span className="text-gray-400">Required Service:</span> {data.requiredService ? "Yes" : "No"}
-              </p>
-              <p>
+              </p> */}
+              {/* <p>
                 <span className="text-gray-400">Details:</span> {data.details || "N/A"}
-              </p>
+              </p> */}
 
               {/* Service Images */}
               {data.image && Array.isArray(data.image) && data.image.length > 0 && (
@@ -1080,10 +1113,10 @@ const CabSearch = () => {
     <div className="flex min-h-screen bg-gray-800">
       {/* Sidebar */}
       <Sidebar />
-                 
+
       {/* Main Content */}
       <div className="flex-1 p-4 md:p-6 md:ml-60 mt-20 sm:mt-0 text-white transition-all duration-300">
-      {showAccessDenied && <AccessDeniedModal />}
+        {showAccessDenied && <AccessDeniedModal />}
 
         {notification && (
           <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -1147,6 +1180,28 @@ const CabSearch = () => {
         </div>
 
         {error && <p className="text-red-500 mb-4">{error}</p>}
+
+        {/* Status Filter Buttons */}
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setStatusFilter('all')}
+            className={`px-4 py-2 rounded ${statusFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setStatusFilter('assigned')}
+            className={`px-4 py-2 rounded ${statusFilter === 'assigned' ? 'bg-red-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          >
+            Assigned
+          </button>
+          <button
+            onClick={() => setStatusFilter('completed')}
+            className={`px-4 py-2 rounded ${statusFilter === 'completed' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+          >
+            Completed
+          </button>
+        </div>
 
         {/* Loading State */}
         {loading ? (

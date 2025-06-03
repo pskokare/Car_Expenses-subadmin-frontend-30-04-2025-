@@ -83,8 +83,6 @@ const Sidebar = () => {
     { icon: <FiSettings />, label: 'Servicing', link: '/Servicing' },
     { icon: <RiMoneyRupeeCircleLine />, label: 'Expenses', link: '/Expensive' },
 
-    // { icon: <MdOutlineAssignmentTurnedIn />, label: 'Add Cab', link: '/AddCab' },
-    // { icon: <MdOutlineAssignmentTurnedIn />, label: 'Add Driver', link: '/AddDriver' },
   ];
 
   return (
