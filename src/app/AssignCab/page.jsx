@@ -64,6 +64,8 @@ export default function AssignCab() {
     }
   }, [])
 
+  
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -99,6 +101,32 @@ export default function AssignCab() {
     fetchData()
   }, [cabFormSuccess]) // Refetch cabs when a new cab is added
 
+
+
+   useEffect(() => {
+    const fetchFreeData = async () => {
+      try {
+        const token = localStorage.getItem("token")
+        const res = await axios.get(`${baseURL}api/assigncab/freeCabsAndDrivers`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+
+        setDrivers(res.data.freeDrivers || [])
+        setCabs(res.data.freeCabs || [])
+      } catch (error) {
+        console.error("Error fetching free cabs/drivers:", error)
+        setMessage("❌ Failed to load data.")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchFreeData()
+  }, [cabFormSuccess])
+
+
+
+  
   const handleAssign = async () => {
     if (!selectedDriver || !selectedCab) {
       setMessage("⚠️ Please select both driver and cab.")
@@ -349,83 +377,6 @@ export default function AssignCab() {
           )}
         </motion.div>
       </div>
-
-      {/* Add Cab Modal */}
-      {/* {showAddCabForm && (
-        <div className="fixed inset-0 bg-gradient-to-b bg-black/50 to-transparent backdrop-blur-md  flex items-center justify-center z-50 p-4">
-          <motion.div
-            className="bg-gray-800 border border-gray-700 rounded-lg p-6 w-full max-w-md"
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-white">Add New Cab</h3>
-              <button
-                onClick={() => {
-                  setShowAddCabForm(false)
-                  setCabFormErrors({})
-                  setCabFormSuccess("")
-                }}
-                className="text-gray-400 hover:text-white"
-              >
-                ✕
-              </button>
-            </div>
-
-            {cabFormSuccess && <p className="text-green-500 text-center mb-4">{cabFormSuccess}</p>}
-
-            <form onSubmit={handleAddCabSubmit} encType="multipart/form-data">
-              {[
-                { name: "cabNumber", icon: <FaCar />, placeholder: "Cab Number" },
-                { name: "insuranceNumber", icon: <FaClipboardList />, placeholder: "Insurance Number" },
-                {
-                  name: "insuranceExpiry",
-                  icon: <FaCalendarAlt />,
-                  placeholder: "Insurance Expiry Date",
-                  type: "date",
-                },
-                { name: "registrationNumber", icon: <FaClipboardList />, placeholder: "Registration Number" },
-              ].map(({ name, icon, placeholder, type = "text" }, index) => (
-                <div key={index} className="relative mt-4">
-                  <div className="absolute left-3 top-3 text-white">{icon}</div>
-                  <input
-                    type={type}
-                    name={name}
-                    placeholder={placeholder}
-                    className="w-full bg-gray-700 text-white pl-10 p-3 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    onChange={handleCabFormChange}
-                    value={cabFormData[name]}
-                  />
-                  {cabFormErrors[name] && <p className="text-red-500 text-sm mt-1">{cabFormErrors[name]}</p>}
-                </div>
-              ))}
-
-              <div className="relative mt-4">
-                <FaUpload className="absolute left-3 top-3 text-white" />
-                <input
-                  type="file"
-                  name="cabImage"
-                  accept="image/*"
-                  className="w-full bg-gray-700 text-white p-3 pl-10 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  onChange={handleCabFormChange}
-                />
-                {cabFormErrors.cabImage && <p className="text-red-500 text-sm mt-1">{cabFormErrors.cabImage}</p>}
-              </div>
-
-              {cabFormErrors.apiError && <p className="text-red-500 text-sm mt-4">{cabFormErrors.apiError}</p>}
-
-              <button
-                type="submit"
-                className="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg mt-4 font-medium"
-                disabled={loading}
-              >
-                {loading ? "Adding..." : "Add Cab"}
-              </button>
-            </form>
-          </motion.div>
-        </div>
-      )} */}
 
 {showAddCabForm && (
   <div className="fixed inset-0 bg-gradient-to-b bg-black/50 to-transparent backdrop-blur-md flex items-center justify-center z-50 p-4">
