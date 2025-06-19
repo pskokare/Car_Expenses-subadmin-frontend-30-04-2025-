@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "Cab RootBudget",
+  title: "Route Budget",
   description: "",
 };
 
